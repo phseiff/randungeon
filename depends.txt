@@ -1,0 +1,7 @@
+sfinv
+default
+doors
+flowers
+markdown2formspec
+buckets?
+stairs?
