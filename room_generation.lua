@@ -1,17 +1,30 @@
 -- Helper Functions For Block Comparisons
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 local helper_functions = dofile(mod_path.."/helpers.lua")
 local contains = helper_functions.contains
 local intersects = helper_functions.intersects
 local bool_to_number = helper_functions.bool_to_number
+local get_solid_air_block_replacement = helper_functions.get_solid_air_block_replacement
+
+-- Door Generation
+local door_generation_code = dofile(mod_path.."/doors.lua")
+local place_doubledoor_based_on_materials = door_generation_code.place_doubledoor_based_on_materials
+
+--
+-- Helper Function
+--
 
 local function set_structure_block(pos, name, only_lace_solid_blocks)
-    -- reducdd version of set_structure_block
+    -- reduced & modified version of set_structure_block from build_dungeon_from_blocks.lua
 	local old_node_name = minetest.get_node(pos).name
 	-- air nodes don't get placed, unless in water, in which case they get turned into glass, or lava, in which case they get turned into dungeon air
 	-- (that later gets automatically obsidian-glass-mantlet)
-	if name == "air" or name == "dungeon_watch:dungeon_air" then
-		return
+	if name == "air" or name == "randungeon:dungeon_air" then
+		if minetest.registered_nodes[old_node_name].buildable_to then
+			minetest.set_node(pos, {name=get_solid_air_block_replacement(pos, true)})
+		else
+			return
+		end
 	end
 	-- "[new_node]_with_" nodes don't get replaced, so stone with ores doesn't get replaced by stone
 	if string.find(old_node_name, "^"..name.."_with_") then
@@ -20,10 +33,6 @@ local function set_structure_block(pos, name, only_lace_solid_blocks)
 	-- otherwise, set node
 	minetest.set_node(pos, {name=name})
 end
-
--- Door Generation
-local door_generation_code = dofile(mod_path.."/doors.lua")
-local place_doubledoor_based_on_materials = door_generation_code.place_doubledoor_based_on_materials
 
 --
 -- Functions To Build Dungeon Rooms
@@ -54,7 +63,7 @@ local function make_unconnected_room_style(materials)
 	local pillar_room = false -- <- means that every direction (x-x and z-z) will have a row of pillars if there is a door in that dir and it has an uneven block length
 	local door_pillars = false -- <- means that there'll be two pillars in front of every door
 	local rand = math.random()
-	if contains({wall_type_1, wall_type_2}, "dungeon_watch:bookshelf") and math.random() < 0.67 or rand < 0.15 then
+	if contains({wall_type_1, wall_type_2}, "randungeon:bookshelf") and math.random() < 0.67 or rand < 0.15 then
 		inner_walls = true -- 15% chance
 	elseif rand < 0.40 then
 		pillar_room = true -- 25% chance
@@ -76,9 +85,9 @@ local function make_unconnected_room_style(materials)
     -- pillar materials
     local rand = math.random()
     local pillar_material_type
-    if rand < 0.2 and not (wall_type_1 == "dungeon_watch:bookshelf" and wall_type_2 ~= "dungeon_watch:bookshelf" and inner_walls) then
+    if rand < 0.2 and not (wall_type_1 == "randungeon:bookshelf" and wall_type_2 ~= "randungeon:bookshelf" and inner_walls) then
         pillar_material_type = 3 -- means that entire pillar is made from wall_type_2
-    elseif rand < 0.4 and not (wall_type_2 == "dungeon_watch:bookshelf" and wall_type_1 ~= "dungeon_watch:bookshelf" and inner_walls) then
+    elseif rand < 0.4 and not (wall_type_2 == "randungeon:bookshelf" and wall_type_1 ~= "randungeon:bookshelf" and inner_walls) then
         pillar_material_type = 1 -- means entire pillar is made from wall_type_1
     else
         pillar_material_type = 2 -- means pillar is made from wall_type_1 for lowest block and wall_type_2 for all others
@@ -99,7 +108,7 @@ local function make_unconnected_room_style(materials)
 			to_add = -1
 		elseif minetest.registered_nodes[material_name]["groups"]["wood"] then
 			to_add = 1
-		elseif material_name == "dungeon_watch:bookshelf" then
+		elseif material_name == "randungeon:bookshelf" then
 			to_add = 2
 		end
 		if material_type == "pillar_type" then
@@ -159,7 +168,7 @@ local function make_unconnected_room_style(materials)
 
 		-- properties that don't get generated in random room style generation, but that can be manually set to alter the appearence of themed rooms/levels:
 		pool=nil,
-		pool_liquid=nil, -- can be "default:Water_source" or "dungeon_watch:lava_source"
+		pool_liquid=nil, -- can be "default:Water_source" or "randungeon:lava_source"
 		water_lilies=nil,
 		is_treasure_level=false,
 		room_center_treasure_block=nil,
@@ -317,15 +326,15 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	for x = room_corner_1.x+1, room_corner_2.x-1 do
 		for z = room_corner_1.z+1, room_corner_2.z-1 do
 			for y = room_corner_1.y+1, room_corner_2.y-1 do
-				minetest.set_node({x=x, y=y, z=z}, {name="dungeon_watch:dungeon_air"})
+				minetest.set_node({x=x, y=y, z=z}, {name="randungeon:dungeon_air"})
 			end
 		end
 	end
 	-- give pinnacles if needed
 	if room_style.pinnacles_if_floating_in_cave and is_in_cave then
-		print("PINNACLES ON PIZZA !")
-		top_side_area = (room_corner_2.x - room_corner_1.x + 1) * (room_corner_2.z - room_corner_1.z + 1) - 4 -- <-- 4 bc of the pillar on top
-		free_top_side_area = #minetest.find_nodes_in_area(
+		-- print("PINNACLES ON PIZZA !")
+		local top_side_area = (room_corner_2.x - room_corner_1.x + 1) * (room_corner_2.z - room_corner_1.z + 1) - 4 -- <-- 4 bc of the pillar on top
+		local free_top_side_area = #minetest.find_nodes_in_area(
 			{x=room_corner_1.x, y=room_corner_2.y+1, z=room_corner_1.z},
 			{x=room_corner_2.x, y=room_corner_2.y+1, z=room_corner_2.z}, {"air", "group:water"}
 		)
@@ -475,7 +484,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 		{z_minus, "z", "x", 1, "z_minus"},
 	}
 	for _, params in ipairs(dirs) do
-		has_door = room_style["door_" .. params[5]]
+		local has_door = room_style["door_" .. params[5]]
 		if params[1] and ((room_has_doors == 2 or room_has_doors == 1 and math.random() < 0.5) and has_door ~= false) or has_door == true then
 			local new_block_positions = {}
 			local both_room_corners = {room_corner_1, room_corner_2}
@@ -493,13 +502,13 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	end
     -- make pool:
 	local pool_chance = room_style.is_treasure_level and 0.5 or 1/3
-	print("room style: " .. minetest.serialize(room_style))
+	-- print("room style: " .. minetest.serialize(room_style))
     if (math.random() < pool_chance and (edge_pillars or pillar_room or not can_have_pillars) and room_style.pool ~= false) or room_style.pool == true then
         -- decide on what to fill pool with:
         local pool_fluid
         local emergency_pool_bassin
 		if room_style.pool_liquid then
-			pool_fluid = room_style.pool_liquid -- only allowed for "default:water_source" or "dungeon_watch:lava_source"
+			pool_fluid = room_style.pool_liquid -- only allowed for "default:water_source" or "randungeon:lava_source"
 		elseif room_style.is_treasure_level then
 			pool_fluid = "default:goldblock"
             emergency_pool_bassin = "default:silver_sandstone_block"
@@ -507,13 +516,13 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
             pool_fluid = "default:river_water_source"
             emergency_pool_bassin = "default:silver_sandstone_block"
         else
-            pool_fluid = "dungeon_watch:lava_source"
+            pool_fluid = "randungeon:lava_source"
             emergency_pool_bassin = "default:obsidianbrick"
         end
         -- freeze if needed:
         local frozen_version = {
             ["default:river_water_source"] = "default:ice",
-            ["dungeon_watch:lava_source"] = "default:obsidian"
+            ["randungeon:lava_source"] = "default:obsidian"
         }
         local actual_pool_fluid = pool_fluid
         if frozen then
@@ -610,5 +619,6 @@ end
 return {
     make_room = make_room,
     make_room_style = make_room_style,
-    make_unconnected_room_style = make_unconnected_room_style
+    make_unconnected_room_style = make_unconnected_room_style,
+	get_solid_air_block_replacement = get_solid_air_block_replacement
 }

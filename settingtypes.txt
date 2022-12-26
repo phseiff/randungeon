@@ -1,0 +1,16 @@
+
+#    Whether dungeons should naturally generate in the world (if not they can only be spawned using the respective tools in creative mode).
+#    Note that dungeon generation can take several seconds and that during this time many normal operations of ones world (e.g. crops growing) will be blocked.
+randungeon_enable_natural_dungeon_generation (Allow randungeon to generate dungeons naturally in worlds) bool true
+
+#    comma-separated list of worlds, e.g. "world1,world2,world3" for which dungeon generation should be specifically enabled.
+#    Don't append whitespace that isn't actually there in the world name to the world names in this list.
+randungeon_worlds_with_nat_dungeon_generation_enabled (Worlds for which dungeon generation should be specifically enabled) string
+
+#    comma-separated list of worlds, e.g. "world1,world2,world3" for which dungeon generation should be specifically disabled.
+#    Don't append whitespace that isn't actually there in the world name to the world names in this list.
+randungeon_worlds_with_nat_dungeon_generation_disabled  (Worlds for which dungeon generation should be specifically disabled) string
+
+#    For every 200x200 block wide chunk of the world there is a chance that a dungeon will be generated in it.
+#    This chance can be modified with this option. Must be larger than 0 and not more than 100, since it's in percent.
+randungeon_dungeon_chance  (Chance for a dungeon to be generated per 200x200 block area in percent) float 10 0 100

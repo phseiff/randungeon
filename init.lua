@@ -2,7 +2,7 @@
 -- Include parts of the mod defined elsewhere
 --
 
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 
 -- Dungeon Map Generator
 local generate_dungeon_map = dofile(mod_path.."/make_dungeon_map.lua")["generate_dungeon_map"]
@@ -23,49 +23,62 @@ local make_dungeon_tile = dungeon_building_functions.make_dungeon_tile
 local make_dungeon_level = dungeon_building_functions.make_dungeon_level
 local make_dungeon = dungeon_building_functions.make_dungeon
 
+-- Natural Dungeon Generation
+dofile(mod_path.."/natural_generation.lua")
+
 --
 -- Helper Items
 --
 
-minetest.register_craftitem("dungeon_watch:selected_frame", {
-	description = "Selector (use this to mark a textured inventory tile without obscuring its texture)",
-	inventory_image = "dungeon_watch_selected_frame.png"
+local selector_description = "\n\n(Used for 'Make Dungeon (unrand)' inventory tab;\nsee manual for further explanation.)"
+
+minetest.register_craftitem("randungeon:selected_frame", {
+	description = "Make Dungeon (unrand) Direction Selector" .. selector_description,
+	inventory_image = "randungeon_selected_frame.png"
 })
 
-minetest.register_craftitem("dungeon_watch:bridge_type_0", {
-	description = "Bridge Type Selector (walls & roof present)",
-	inventory_image = "inv_bg_color.png^dungeon_watch_bridge_type_0.png"
+minetest.register_craftitem("randungeon:bridge_type_0", {
+	description = "Bridge Type Selector (walls & roof present)" .. selector_description,
+	groups = {bridge_type_selector = 1},
+	inventory_image = "randungeon_inv_bg_color.png^randungeon_bridge_type_0.png"
 })
 
-minetest.register_craftitem("dungeon_watch:bridge_type_1", {
-	description = "Bridge Type Selector (lower wall part & roof present)",
-	inventory_image = "inv_bg_color.png^dungeon_watch_bridge_type_1.png"
+minetest.register_craftitem("randungeon:bridge_type_1", {
+	description = "Bridge Type Selector (lower wall part & roof present)" .. selector_description,
+	groups = {bridge_type_selector = 1},
+	inventory_image = "randungeon_inv_bg_color.png^randungeon_bridge_type_1.png"
 })
 
-minetest.register_craftitem("dungeon_watch:bridge_type_2", {
-	description = "Bridge Type Selector (lower wall part present)",
-	inventory_image = "inv_bg_color.png^dungeon_watch_bridge_type_2.png"
+minetest.register_craftitem("randungeon:bridge_type_2", {
+	description = "Bridge Type Selector (lower wall part present)" .. selector_description,
+	groups = {bridge_type_selector = 1},
+	inventory_image = "randungeon_inv_bg_color.png^randungeon_bridge_type_2.png"
 })
 
-minetest.register_craftitem("dungeon_watch:bridge_type_3", {
-	description = "Bridge Type Selector (no walls or roof present)",
-	inventory_image = "inv_bg_color.png^dungeon_watch_bridge_type_3.png"
+minetest.register_craftitem("randungeon:bridge_type_3", {
+	description = "Bridge Type Selector (no walls or roof present)" .. selector_description,
+	groups = {bridge_type_selector = 1},
+	inventory_image = "randungeon_inv_bg_color.png^randungeon_bridge_type_3.png"
 })
 
 -- Manual
 
 local dungeon_manual_formspec = "size[8,10]" ..
-				                "scroll_container[0.3,0;9.5,10.8;manual_scrollbar;vertical]" .. 
-				                md2f.md2ff(0,0,8,18, mod_path.."/README.md") ..
-				                "scroll_container_end[]" ..
-				                "scrollbar[7.6,0;0.2,9;vertical;manual_scrollbar;0]" ..
+				                --"scroll_container[0.3,0;9.5,10.8;manual_scrollbar;vertical]" .. 
+				                -- md2f.md2ff(0,0,7.5,25, mod_path.."/README.md") ..
+								md2f.md2ff(0.3,0,8,10.8, mod_path.."/README.md") ..
+				                --"scroll_container_end[]" ..
+				                --"scrollbar[7.6,0;0.2,9;vertical;manual_scrollbar;0]" ..
 								"button[0,6.3;8,8;exit_manual;Close]"
 
-minetest.register_craftitem("dungeon_watch:manual", {
+-- print(md2f.md2ff(0,0,8,18, mod_path.."/README.md"))
+
+minetest.register_craftitem("randungeon:manual", {
 	description = "Manual for Dungeon Generation Mod\n(left-click to read)",
 	inventory_image = "randungeon_manual.png",
+	groups = {book = 1},
 	on_use = function(itemstack, user, pointed_thing)
-		minetest.show_formspec(user:get_player_name(), "dungeon_watch:manual", dungeon_manual_formspec)
+		minetest.show_formspec(user:get_player_name(), "randungeon:manual", dungeon_manual_formspec)
 	end
 })
 
@@ -73,42 +86,8 @@ minetest.register_craftitem("dungeon_watch:manual", {
 -- Inventory Stuff
 --
 
-sfinv.register_page("dungeon_watch:make_dungeon_tile", {
-    title = "Make Dungeon Tile",
-    get = function(self, player, context)
-		local meta = player:get_meta()
-		if not meta:get("dungeon_width") then
-			local text = "Click block with a Dungeon Maker Stick to initialize this form!"
-			return sfinv.make_formspec(player, context, "label[0.375,0.5;" .. minetest.formspec_escape(text) .. "]", true)
-		end
-        return sfinv.make_formspec(player, context,
-				"image[0,0;1,1;dungeon_watch_ceiling.png]"..
-				"image[0,1;1,1;dungeon_watch_wall_2.png]"..
-				"image[0,2;1,1;dungeon_watch_wall_1.png]"..
-				"image[0,3;1,1;dungeon_watch_floor.png]"..
-				"image[0,4;1,1;dungeon_watch_pillars.png]"..
-				"list[current_player;dungeon_materials;1,0;1,5;]"..
-
-				"image[2.6,3;1,1;dungeon_bridge_icon.png]"..
-				"image[3.6,3;1,1;dungeon_watch_bridge_type_0.png]"..
-				"list[current_player;bridge_type;3.6,3;1,1]"..
-				
-				"image[4.08,1.2;0.8,0.8;x_plus.png]  list[current_player;dungeon_x_plus;4,1;1,1;]"..
-				"image[6.08,1.2;0.8,0.8;x_minus.png]  list[current_player;dungeon_x_minus;6,1;1,1;]"..
-				"image[5.08,0.2;0.8,0.8;z_plus.png]  list[current_player;dungeon_z_plus;5,0;1,1;]"..
-				"image[5.08,2.2;0.8,0.8;z_minus.png]  list[current_player;dungeon_z_minus;5,2;1,1;]"..
-
-				"button[5,3;3,3.4;open_manual;Open Manual]" ..
-				"item_image[5.1,4.1;0.8,0.8;dungeon_watch:manual]" ..
-				"", true)
-    end,
-	is_in_nav = function(self, player, context)
-		return minetest.is_creative_enabled(player:get_player_name())
-	end
-})
-
-sfinv.register_page("dungeon_watch:make_dungeon_level", {
-    title = "Make Dungeon (-Level)",
+sfinv.register_page("randungeon:make_dungeon_level", {
+    title = "Make Dungeon",
     get = function(self, player, context)
 		local meta = player:get_meta()
 		if not meta:get("cave_percentage") then
@@ -137,7 +116,7 @@ sfinv.register_page("dungeon_watch:make_dungeon_level", {
 				minetest.formspec_escape("max % of blocks taken up by bubble caves:") .. ";" .. tostring(meta:get("cave_percentage")) .. "]"..
 
 				"checkbox[4.3,0.8;light_up_corridors;" ..
-				minetest.formspec_escape("light up corridors after creation") .. ";"  .. tostring(number_to_bool(meta:get_int("light_up_corridors"))) .. "]" ..
+				minetest.formspec_escape("light up corridors & caves") .. ";"  .. tostring(number_to_bool(meta:get_int("light_up_corridors"))) .. "]" ..
 
 				"checkbox[4.3,1.5;gold_pools;" ..
 				minetest.formspec_escape("gold pools on lowest level") .. ";"  .. tostring(number_to_bool(meta:get_int("gold_pools"))) .. "]" ..
@@ -147,8 +126,42 @@ sfinv.register_page("dungeon_watch:make_dungeon_level", {
 				"list[current_player;dungeon_treasure_block;7,2.8;1,1;]" ..
 
 				"button[4,3;3.7,3.4;open_manual;Open Manual]" ..
-				"item_image[4.4,4.1;0.8,0.8;dungeon_watch:manual]" ..
+				"item_image[4.4,4.1;0.8,0.8;randungeon:manual]" ..
 
+				"", true)
+    end,
+	is_in_nav = function(self, player, context)
+		return minetest.is_creative_enabled(player:get_player_name())
+	end
+})
+
+sfinv.register_page("randungeon:make_dungeon_tile", {
+    title = "Make Dungeon (unrand)",
+    get = function(self, player, context)
+		local meta = player:get_meta()
+		if not meta:get("dungeon_width") then
+			local text = "Click block with a Dungeon Maker Stick to initialize this form!"
+			return sfinv.make_formspec(player, context, "label[0.375,0.5;" .. minetest.formspec_escape(text) .. "]", true)
+		end
+        return sfinv.make_formspec(player, context,
+				"image[0,0;1,1;randungeon_ceiling.png]"..
+				"image[0,1;1,1;randungeon_wall_2.png]"..
+				"image[0,2;1,1;randungeon_wall_1.png]"..
+				"image[0,3;1,1;randungeon_floor.png]"..
+				"image[0,4;1,1;randungeon_pillars.png]"..
+				"list[current_player;dungeon_materials;1,0;1,5;]"..
+
+				"image[2.6,3;1,1;randungeon_bridge_icon.png]"..
+				"image[3.6,3;1,1;randungeon_bridge_type_0.png]"..
+				"list[current_player;bridge_type;3.6,3;1,1]"..
+				
+				"image[4.08,1.2;0.8,0.8;randungeon_x_plus.png]  list[current_player;dungeon_x_plus;4,1;1,1;]"..
+				"image[6.08,1.2;0.8,0.8;randungeon_x_minus.png]  list[current_player;dungeon_x_minus;6,1;1,1;]"..
+				"image[5.08,0.2;0.8,0.8;randungeon_z_plus.png]  list[current_player;dungeon_z_plus;5,0;1,1;]"..
+				"image[5.08,2.2;0.8,0.8;randungeon_z_minus.png]  list[current_player;dungeon_z_minus;5,2;1,1;]"..
+
+				"button[5,3;3,3.4;open_manual;Open Manual]" ..
+				"item_image[5.1,4.1;0.8,0.8;randungeon:manual]" ..
 				"", true)
     end,
 	is_in_nav = function(self, player, context)
@@ -161,8 +174,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		local meta = player:get_meta()
 		-- dungeon_width
 		local dungeon_width = tonumber(fields["dungeon_width"])
-		if dungeon_width == nil then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_width has to be an int. Please enter an int instead of \"" .. fields["dungeon_width"] .. "\"")
+		if dungeon_width == nil or dungeon_width < 2 then
+			minetest.chat_send_player(player:get_player_name(), "dungeon_width has to be an int >=2. Please enter an int instead of \"" .. fields["dungeon_width"] .. "\"")
 		else
 			meta:set_int("dungeon_width", dungeon_width)
 		end
@@ -175,8 +188,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 		-- dungeon_levels
 		local dungeon_levels = tonumber(fields["dungeon_levels"])
-		if dungeon_levels == nil then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int instead of \"" .. fields["dungeon_levels"] .. "\"")
+		if dungeon_levels == nil or dungeon_levels < 1 then
+			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int >=1 instead of \"" .. fields["dungeon_levels"] .. "\"")
 		else
 			meta:set_int("dungeon_levels", dungeon_levels)
 		end
@@ -214,11 +227,35 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end
 	-- open manual
 	if fields["open_manual"] then
-		minetest.show_formspec(player:get_player_name(), "dungeon_watch:manual", dungeon_manual_formspec)
+		minetest.show_formspec(player:get_player_name(), "randungeon:manual", dungeon_manual_formspec)
 	elseif fields["exit_manual"] then
-		minetest.close_formspec(player:get_player_name(), "dungeon_watch:manual")
+		minetest.close_formspec(player:get_player_name(), "randungeon:manual")
 	end
 end)
+
+minetest.register_allow_player_inventory_action(
+	function(player, action, inventory, inventory_info)
+		-- materials amy only be blocks
+		if action == "move" and contains({"dungeon_treasure_block", "dungeon_materials"}, inventory_info.to_list) then
+			local item_name = inventory:get_list(inventory_info.from_list)[inventory_info.from_index]:get_name()
+			if not minetest.registered_nodes[item_name] then
+				return 0
+			end
+		-- bridge type only accepts bridge type selectors
+		elseif action == "move" and inventory_info.to_list == "bridge_type" then
+			local item_name = inventory:get_list(inventory_info.from_list)[inventory_info.from_index]:get_name()
+			if not (minetest.registered_craftitems[item_name] and minetest.registered_craftitems[item_name].groups.bridge_type_selector) then
+				return 0
+			end
+		-- dungeon tile direction settings only accept selector item
+		elseif action == "move" and contains({"dungeon_x_plus", "dungeon_x_minus", "dungeon_z_plus", "dungeon_z_minus"}, inventory_info.to_list) then
+			local item_name = inventory:get_list(inventory_info.from_list)[inventory_info.from_index]:get_name()
+			if item_name ~= "randungeon:selected_frame" then
+				return 0
+			end
+		end
+	end
+)
 
 function initialize_player_if_needed(user)
 	local inv = user:get_inventory()
@@ -228,27 +265,27 @@ function initialize_player_if_needed(user)
 		meta:set_int("dungeon_width", 10)
 		meta:set_int("dungeon_deph", 12)
 		meta:set_int("dungeon_levels", 10)
-		meta:set_int("dungeon_bottom_deph", 40)
+		meta:set_int("dungeon_bottom_deph", 70)
 		meta:set_int("dungeon_top_deph", 100)
 		meta:set_int("cave_percentage", 30)
 		meta:set_int("light_up_corridors", 0)
 		meta:set_int("gold_pools", 1)
 		meta:set_int("rim_sealed", 1)
 		inv:set_size("dungeon_treasure_block", 1)
-		inv:set_list("dungeon_treasure_block", {"dungeon_watch:example_treasure"})
+		inv:set_list("dungeon_treasure_block", {"randungeon:example_treasure"})
 		inv:set_size("dungeon_materials", 5)
-		inv:set_list("dungeon_materials", {"dungeon_watch:ceiling", "dungeon_watch:wall_type_2", "dungeon_watch:wall_type_1", "dungeon_watch:floor", "dungeon_watch:pillar"})
+		inv:set_list("dungeon_materials", {"randungeon:ceiling", "randungeon:wall_type_2", "randungeon:wall_type_1", "randungeon:floor", "randungeon:pillar"})
 		inv:set_size("bridge_type", 1)
-		inv:add_item("bridge_type", ItemStack("dungeon_watch:bridge_type_2"))
+		inv:add_item("bridge_type", ItemStack("randungeon:bridge_type_2"))
 		inv:set_size("dungeon_x_plus", 1)
-		inv:set_list("dungeon_x_plus", {"dungeon_watch:selected_frame"})
+		inv:set_list("dungeon_x_plus", {"randungeon:selected_frame"})
 		inv:set_size("dungeon_x_minus", 1)
-		inv:set_list("dungeon_x_minus", {"dungeon_watch:selected_frame"})
+		inv:set_list("dungeon_x_minus", {"randungeon:selected_frame"})
 		inv:set_size("dungeon_z_plus", 1)
-		inv:set_list("dungeon_z_plus", {"dungeon_watch:selected_frame"})
+		inv:set_list("dungeon_z_plus", {"randungeon:selected_frame"})
 		inv:set_size("dungeon_z_minus", 1)
-		inv:set_list("dungeon_z_minus", {"dungeon_watch:selected_frame"})
-		minetest.chat_send_player(user:get_player_name(), "Dungeon Maker Stick initialized for " .. user:get_player_name() .. ".")
+		inv:set_list("dungeon_z_minus", {"randungeon:selected_frame"})
+		-- minetest.chat_send_player(user:get_player_name(), "Dungeon Maker Stick initialized for " .. user:get_player_name() .. ".")
 	end
 end
 
@@ -259,13 +296,13 @@ minetest.register_on_joinplayer(
 )
 
 function get_bridge_type(bridge_type_selector_item)
-	if bridge_type_selector_item == "dungeon_watch:bridge_type_0" then
+	if bridge_type_selector_item == "randungeon:bridge_type_0" then
 		return 0
-	elseif bridge_type_selector_item == "dungeon_watch:bridge_type_1" then
+	elseif bridge_type_selector_item == "randungeon:bridge_type_1" then
 		return 1
-	elseif bridge_type_selector_item == "dungeon_watch:bridge_type_2" then
+	elseif bridge_type_selector_item == "randungeon:bridge_type_2" then
 		return 2
-	elseif bridge_type_selector_item == "dungeon_watch:bridge_type_3" then
+	elseif bridge_type_selector_item == "randungeon:bridge_type_3" then
 		return 3
 	else
 		return 0
@@ -280,9 +317,9 @@ function this_or_air(s)
 	end
 end
 	
-minetest.register_craftitem("dungeon_watch:dungeon_stick_1_tile", {
-	description = "Dungeon Tile Spawn Stick (Debug Item)",
-	inventory_image = "([inventorycube{dungeon_tile_top.png{dungeon_level_side.png{dungeon_level_side.png)",
+minetest.register_craftitem("randungeon:dungeon_stick_1_tile", {
+	description = "Unrandomized Dungeon Tile Spawn Stick (mostly Debug Item)",
+	inventory_image = "([inventorycube{randungeon_dungeon_tile_top.png{randungeon_dungeon_level_side.png{randungeon_dungeon_level_side.png)",
 	wield_image = "default_stick.png^[colorize:#4ddcfa:160",
 	on_use = function(itemstack, user, pointed_thing)
 		local pos
@@ -320,7 +357,7 @@ minetest.register_craftitem("dungeon_watch:dungeon_stick_1_tile", {
 		for x = 1, 10 do
 			for z = 1, 10 do
 				for y = 0, 5 do
-					if minetest.get_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}).name == "dungeon_watch:dungeon_air" then
+					if minetest.get_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}).name == "randungeon:dungeon_air" then
 						minetest.set_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}, {name="air"})
 					end
 				end
@@ -329,9 +366,9 @@ minetest.register_craftitem("dungeon_watch:dungeon_stick_1_tile", {
 	end
 })
 	
-minetest.register_craftitem("dungeon_watch:dungeon_stick_2_level", {
-	description = "Dungeon Level Spawn Stick (Debug Item)",
-	inventory_image = "([inventorycube{dungeon_top.png{dungeon_level_side.png{dungeon_level_side.png)",
+minetest.register_craftitem("randungeon:dungeon_stick_2_level", {
+	description = "Unrandomized Dungeon Level Spawn Stick (mostly Debug Item)",
+	inventory_image = "([inventorycube{randungeon_dungeon_top.png{randungeon_dungeon_level_side.png{randungeon_dungeon_level_side.png)",
 	wield_image = "default_stick.png^[colorize:#4ddcfa:160",
 	on_use = function(itemstack, user, pointed_thing)
 		local pos
@@ -373,9 +410,9 @@ minetest.register_craftitem("dungeon_watch:dungeon_stick_2_level", {
 	end
 })
 
-minetest.register_craftitem("dungeon_watch:dungeon_stick_3_dungeon", {
-	description = "Dungeon Spawn Stick (Debug Item)",
-	inventory_image = "([inventorycube{dungeon_top.png{dungeon_side.png{dungeon_side.png)",
+minetest.register_craftitem("randungeon:dungeon_stick_3_dungeon", {
+	description = "Unrandomized Dungeon Spawn Stick (mostly Debug Item)",
+	inventory_image = "([inventorycube{randungeon_dungeon_top.png{randungeon_dungeon_side.png{randungeon_dungeon_side.png)",
 	wield_image = "default_stick.png^[colorize:#4ddcfa:160",
 	on_use = function(itemstack, user, pointed_thing)
 		local pos
@@ -429,10 +466,10 @@ minetest.register_craftitem("dungeon_watch:dungeon_stick_3_dungeon", {
 	end
 })
 	
-minetest.register_craftitem("dungeon_watch:dungeon_stick_4_random", {
-	description = "Randomized Dungeon Spawn Stick (Debug Item)",
-	inventory_image = "([inventorycube{dungeon_top.png{dungeon_randomized_side.png{dungeon_randomized_side.png)",
-	wield_image = "dungeon_stick_4_coloring.png^[mask:default_stick.png\\^[colorize\\:#FFFFFF\\:170",
+minetest.register_craftitem("randungeon:dungeon_stick_4_random", {
+	description = "Randomized Dungeon Spawn Stick",
+	inventory_image = "([inventorycube{randungeon_dungeon_top.png{randungeon_dungeon_randomized_side.png{randungeon_dungeon_randomized_side.png)",
+	wield_image = "randungeon_dungeon_stick_4_coloring.png^[mask:default_stick.png\\^[colorize\\:#FFFFFF\\:170",
 	on_use = function(itemstack, user, pointed_thing)
 		local pos
 		if pointed_thing.type == "object" then

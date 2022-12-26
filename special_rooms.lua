@@ -2,7 +2,7 @@
 --
 -- Dependencies
 --
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 
 -- Room Generation
 local room_generation_functions = dofile(mod_path.."/room_generation.lua")
@@ -20,19 +20,43 @@ local tiles_are_directly_connected = generate_dungeon_map_functions.tiles_are_di
 --
 
 local function make_treasure_level(dungeon_maps, materials, room_styles)
-    local room_style = room_styles[#dungeon_maps]
-    local m = materials[#dungeon_maps]
+    local i = #dungeon_maps
+    local room_style = room_styles[i]
+    local m = materials[i]
+    local width = #dungeon_maps[1]
 
-    while room_style.door_pillars or room_style.inner_walls do
-        room_style = make_room_style(m, room_styles[#dungeon_maps-1])
-    end
+    -- treasure pools & others:
     room_style.is_treasure_level = true
     room_style.frozen = false
     room_style.build_even_if_in_cave = true
     room_style.pinnacles_if_floating_in_cave = true
+    -- bridge type:
     m.bridge_type = math.max(0, m.bridge_type - 1)
     if math.random() < 0.5 then
         m.bridge_type = math.max(0, m.bridge_type - 1)
+    end
+    -- pillar type:
+    if room_style.door_pillars or room_style.inner_walls then
+        local replacement_pillar_type
+        local rand = math.random()
+        if rand < 1/3 then
+            replacement_pillar_type = {"can_have_pillars", false}
+        elseif rand < 2/3 then
+            replacement_pillar_type = {"pillar_room", true}
+        else
+            replacement_pillar_type = {"edge_pillars", true}
+        end
+        for x = 1, width do
+            for z = 1, width do
+                local relevant_tile = dungeon_maps[i][x][z]
+                if math.random() < 3/5 then
+                    relevant_tile.tile_specific_room_style = table.copy(room_style)
+                    relevant_tile.tile_specific_room_style[replacement_pillar_type[1]] = replacement_pillar_type[2]
+                    relevant_tile.tile_specific_room_style.door_pillars = false
+                    relevant_tile.tile_specific_room_style.inner_walls = false
+                end
+            end
+        end
     end
 end
 
@@ -55,7 +79,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
             table.insert(potential_rooms_and_their_neighbors, relevant_tile_coords)
         end
     end
-    print("options for treasure room & its neighbors: " .. minetest.serialize(potential_rooms_and_their_neighbors))
+    -- print("options for treasure room & its neighbors: " .. minetest.serialize(potential_rooms_and_their_neighbors))
     -- remove all of them that have upgoing staircases in them, if possible:
     local staircase_free_options = {}
     for _, option in ipairs(potential_rooms_and_their_neighbors) do
@@ -70,7 +94,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
             table.insert(staircase_free_options, option)
         end
     end
-    print("options that don't have a staircase: " .. minetest.serialize(staircase_free_options))
+    -- print("options that don't have a staircase: " .. minetest.serialize(staircase_free_options))
     -- remove all of them that overlap with caves, if possible:
     if #staircase_free_options == 0 then
         staircase_free_options = potential_rooms_and_their_neighbors
@@ -90,7 +114,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
             table.insert(cave_free_options, option)
         end
     end
-    print("options that don't overlap with caves: " .. minetest.serialize(cave_free_options))
+    -- print("options that don't overlap with caves: " .. minetest.serialize(cave_free_options))
     if #cave_free_options == 0 then
         cave_free_options = staircase_free_options
     end
@@ -107,10 +131,10 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
             table.insert(max_sized_options, option)
         end
     end
-    print("max tile size of a treasure room complex: " .. tostring(max_tiles_in_treasure_building_complex))
-    print("max sized treasure building complexes: " .. minetest.serialize(max_sized_options))
+    -- print("max tile size of a treasure room complex: " .. tostring(max_tiles_in_treasure_building_complex))
+    -- print("max sized treasure building complexes: " .. minetest.serialize(max_sized_options))
     local treasure_rooms = max_sized_options[math.random(1, #max_sized_options)]
-    print("treasure building complex: " .. minetest.serialize(treasure_rooms))
+    -- print("treasure building complex: " .. minetest.serialize(treasure_rooms))
     local options_which_blocks_we_make_golden = {
         {"floor_type"},
         {"floor_type", "wall_type_1"},
@@ -126,7 +150,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
     local side_rooms_have_lava_if_treasure_room_is_poolless = math.random() < 0.5
     local main_treasure_room
     for treasure_room_number, treasure_room in ipairs(treasure_rooms) do
-        x, z = unpack(treasure_room)
+        local x, z = unpack(treasure_room)
         dungeon_maps[i][x][z].tile_specific_materials = {}
         for _, golden_material in ipairs(golden_blocks) do
             dungeon_maps[i][x][z].tile_specific_materials[golden_material] = "default:goldblock"
@@ -169,7 +193,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
                     dungeon_maps[i][x][z].tile_specific_room_style.water_lilies = true
                 else
                     dungeon_maps[i][x][z].tile_specific_room_style.pool = true
-                    dungeon_maps[i][x][z].tile_specific_room_style.pool_liquid = "dungeon_watch:lava_source"
+                    dungeon_maps[i][x][z].tile_specific_room_style.pool_liquid = "randungeon:lava_source"
                 end
             end
         else
@@ -178,7 +202,7 @@ local function make_treasure_rooms(dungeon_maps, materials, room_styles, dungeon
                 and (not main_treasure_room.tile_specific_room_style.pool
                 or main_treasure_room.tile_specific_room_style.pool_liquid == "default:water_source") then
                 dungeon_maps[i][x][z].tile_specific_room_style.pool = true
-                dungeon_maps[i][x][z].tile_specific_room_style.pool_liquid = "dungeon_watch:lava_source"
+                dungeon_maps[i][x][z].tile_specific_room_style.pool_liquid = "randungeon:lava_source"
             end
             if x == treasure_rooms[1][1] then
                 if z < treasure_rooms[1][2] then

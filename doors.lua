@@ -1,18 +1,19 @@
 -- Helper Functions For Block Comparisons
 
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 local helper_functions = dofile(mod_path.."/helpers.lua")
 local contains = helper_functions.contains
 local intersects = helper_functions.intersects
 local bool_to_number = helper_functions.bool_to_number
 local number_to_bool = helper_functions.number_to_bool
 local is_even = helper_functions.is_even
+local get_solid_air_block_replacement = helper_functions.get_solid_air_block_replacement
 
 -- define available blocks:
 
 local available_materials = {
     --"default:brick", "air",
-    "dungeon_watch:bookshelf",
+    "randungeon:bookshelf",
     "default:desert_sandstone", "default:desert_sandstone_block", "default:desert_sandstone_brick",
     "default:desert_cobble", "default:desert_stone", "default:desert_stone_block", "default:desert_stonebrick",
     "default:cobble", "default:stone", "default:stone_block", "default:stonebrick",
@@ -22,7 +23,7 @@ local available_materials = {
 
     "default:goldblock",
 
-    "dungeon_watch:ceiling", "dungeon_watch:wall_type_2", "dungeon_watch:wall_type_1", "dungeon_watch:floor", "dungeon_watch:pillar"
+    "randungeon:ceiling", "randungeon:wall_type_2", "randungeon:wall_type_1", "randungeon:floor", "randungeon:pillar"
 }
 
 local woods = {
@@ -38,13 +39,13 @@ end
 local function get_doorframe_name(material)
     local split = string.split(material, ":")
     local name_appendix = split[1] .. "_" .. split[2]
-    return "dungeon_watch:doorframe_" .. name_appendix
+    return "randungeon:doorframe_" .. name_appendix
 end
 
 local function get_door_name(material)
     local split = string.split(material, ":")
     local name_appendix = split[1] .. "_" .. split[2]
-    return "dungeon_watch:door_" .. name_appendix
+    return "randungeon:door_" .. name_appendix
 end
 
 -- function to get material set of door:
@@ -59,13 +60,17 @@ local function get_player_inv_materials(player)
     return {roof_type=roof_type, wall_type_2=wall_type_2, wall_type_1=wall_type_1, floor_type=floor_type, pillar_type=pillar_type}
 end
 
-local function get_door_and_doorframe_materials(materials)
-    for key, attr in pairs(materials) do
-        if attr == "air" then
-            materials[key] = "default:wood"
-        end
+local function get_door_and_doorframe_materials(materials, pos)
+    local doorframe
+    if materials.wall_type_2 == "air" then
+        doorframe = get_doorframe_name(get_solid_air_block_replacement(pos, false))
+    elseif materials.wall_type_2 == "randungeon:bookshelf" then
+        doorframe = get_doorframe_name("default:wood")
+    elseif not contains(available_materials, materials.wall_type_2) then
+        doorframe = nil -- for when there is no doorframe material available
+    else
+        doorframe = get_doorframe_name(materials.wall_type_2)
     end
-    local doorframe = get_doorframe_name(materials.wall_type_2)
     local door
     for _, node in ipairs({
         materials.floor_type, materials.wall_type_1, materials.wall_type_2, materials.roof_type, materials.pillar_type, "default:junglewood"
@@ -76,19 +81,20 @@ local function get_door_and_doorframe_materials(materials)
         end
     end
     -- if the only wooden thing in the level are bookshelfs then we use apple wood, since they are made of this
-    if door == "dungeon_watch:door_junglewood" and contains(
-        {materials.floor_type, materials.wall_type_1, materials.wall_type_2, materials.roof_type, materials.pillar_type}, "dungeon_watch:bookshelf") then
-        door = "dungeon_watch:door_wood"
+    if door == "randungeon:door_junglewood" and contains(
+        {materials.floor_type, materials.wall_type_1, materials.wall_type_2, materials.roof_type, materials.pillar_type}, "randungeon:bookshelf") then
+        door = "randungeon:door_wood"
     end
     return {door, doorframe}
 end
 
 -- item to spawn a door:
 
-minetest.register_craftitem("dungeon_watch:door_item", {
+minetest.register_craftitem("randungeon:door_item", {
     description = "Make randomly rotated door based on dungeon material\nscheme set in 'Make Dungeon Tile' tab.",
-    inventory_image = "dungeon_watch_door_item.png",
-	wield_image = "dungeon_watch_door_item.png",
+    inventory_image = "randungeon_door_item.png",
+	wield_image = "randungeon_door_item.png",
+    groups = {not_in_creative_inventory = 1},
 	on_use = function(itemstack, user, pointed_thing)
         -- figure out pos
         local pos
@@ -107,12 +113,16 @@ minetest.register_craftitem("dungeon_watch:door_item", {
         local door, doorframe = unpack(get_door_and_doorframe_materials(inv_materials))
         if math.random() < 0.5 then
             door = door .. "_mirrored"
-            doorframe = doorframe .. "_mirrored"
+            if doorframe then
+                doorframe = doorframe .. "_mirrored"
+            end
         end
         minetest.chat_send_player(user:get_player_name(), "door: " .. door .. "; doorframe: " .. doorframe)
         local facedir = math.random(0, 3)
         minetest.set_node({x=pos.x, y=pos.y+1, z=pos.z}, {name=door, param2=facedir})
-        minetest.set_node({x=pos.x, y=pos.y+2, z=pos.z}, {name=doorframe, param2=facedir})
+        if doorframe then
+            minetest.set_node({x=pos.x, y=pos.y+2, z=pos.z}, {name=doorframe, param2=facedir})
+        end
     end
 })
 
@@ -148,7 +158,7 @@ end
 local function place_doubledoor_based_on_materials(pos1, pos2, dir_name, materials, no_doorframes)
     local door, doorframe = unpack(get_door_and_doorframe_materials(materials))
     place_doubledoor_or_double_doorframe(pos1, pos2, dir_name, door)
-    if not no_doorframes then
+    if doorframe and not no_doorframes then
         place_doubledoor_or_double_doorframe({x=pos1.x, y=pos1.y+1, z=pos1.z}, {x=pos2.x, y=pos2.y+1, z=pos2.z}, dir_name, doorframe)
     end
 end
@@ -227,12 +237,12 @@ for _, material in ipairs(woods) do
     -- generate new texture:
     local old_tex_name = node["tiles"][1]
     local old_tex_name_rot = old_tex_name .. "\\\\^[transformR90"
-    local one_door = "\\[combine\\:16x32\\:0,0=" .. old_tex_name_rot .. "\\:0,16=" .. old_tex_name_rot .. "\\:0,0=dungeon_watch_door_overlay.png"
+    local one_door = "\\[combine\\:16x32\\:0,0=" .. old_tex_name_rot .. "\\:0,16=" .. old_tex_name_rot .. "\\:0,0=randungeon_door_overlay.png"
     local new_tex_name = "[combine:32x32:0,0=" .. one_door .. ":16,0=" .. one_door
     local new_tex_name_mirrored = new_tex_name .. "^[transformFX"
 
-    local one_door_uneven = "\\[combine\\:16x32\\:0,0=" .. old_tex_name_rot .. "\\:0,16=" .. old_tex_name_rot .. "\\:0,16=dungeon_watch_door_overlay.png"
-                            .. "\\:0,-16=dungeon_watch_door_overlay.png"
+    local one_door_uneven = "\\[combine\\:16x32\\:0,0=" .. old_tex_name_rot .. "\\:0,16=" .. old_tex_name_rot .. "\\:0,16=randungeon_door_overlay.png"
+                            .. "\\:0,-16=randungeon_door_overlay.png"
     local new_tex_name_uneven = "[combine:32x32:0,0=" .. one_door_uneven .. ":16,0=" .. one_door_uneven
     local new_tex_name_uneven_mirrored = new_tex_name_uneven .. "^[transformFX"
 
@@ -390,7 +400,7 @@ for _, material in ipairs(woods) do
             end
 
             -- register node:
-            print("registered dungeon door: " .. get_door_name(material) .. even .. mirrored)
+            -- print("registered dungeon door: " .. get_door_name(material) .. even .. mirrored)
             minetest.register_node(get_door_name(material) .. even .. mirrored, new_node)
         end
     end

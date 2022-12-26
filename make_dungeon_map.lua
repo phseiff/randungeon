@@ -1,5 +1,5 @@
 -- Helper Functions For Block Comparisons
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 local helper_functions = dofile(mod_path.."/helpers.lua")
 local contains = helper_functions.contains
 local intersects = helper_functions.intersects

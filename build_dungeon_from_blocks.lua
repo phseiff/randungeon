@@ -2,7 +2,7 @@
 -- Include parts of the mod defined elsewhere
 --
 
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 
 -- Dungeon Map Generator
 local generate_dungeon_map_functions = dofile(mod_path.."/make_dungeon_map.lua")
@@ -64,7 +64,7 @@ local function set_structure_block(pos, name, only_replace_solid_blocks, dont_re
 	end
 	-- handle the rim of pool bassins specially
 	if minetest.get_meta(pos):get_string("must_be_fireproof") == "true" then
-		if name == "air" or name == "dungeon_watch:dungeon_air" then
+		if name == "air" or name == "randungeon:dungeon_air" then
 			name = "default:stone"
 		end
 		local alternative = minetest.get_meta(pos):get_string("fireproof_alternative")
@@ -79,11 +79,11 @@ local function set_structure_block(pos, name, only_replace_solid_blocks, dont_re
 	end
 	-- air nodes don't get placed, unless in water, in which case they get turned into glass, or lava, in which case they get turned into dungeon air
 	-- (that later gets automatically obsidian-glass-mantlet)
-	if name == "air" or name == "dungeon_watch:dungeon_air" then
+	if name == "air" or name == "randungeon:dungeon_air" then
 		if old_node_name == "default:water_source" then
 			minetest.set_node(pos, {name="default:glass"})
 		elseif minetest.registered_nodes[old_node_name].groups["igniter"] then
-			minetest.set_node(pos, {name="dungeon_watch:dungeon_air"})
+			minetest.set_node(pos, {name="randungeon:dungeon_air"})
 		end
 		return
 	end
@@ -127,7 +127,7 @@ end
 local function fill_with_dungeon_air_if_okay(pos)
 	local meta = minetest.get_meta(pos)
 	if not (meta:get_string("dont_replace_with_air") == "true") then
-		minetest.set_node(pos, {name="dungeon_watch:dungeon_air"})
+		minetest.set_node(pos, {name="randungeon:dungeon_air"})
 	end
 end
 
@@ -289,7 +289,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 						if not ((i == -1 or i == 4) and (value_a == 3 or value_a == 8)) then
 							local check_block_pos = {x=new_block_pos["x"], y=pos.y + i, z=new_block_pos["z"]}
 							if minetest.registered_nodes[minetest.get_node(check_block_pos).name].groups["igniter"] then
-								if minetest.find_node_near(check_block_pos, 1, {"dungeon_watch:dungeon_air"}) then
+								if minetest.find_node_near(check_block_pos, 1, {"randungeon:dungeon_air"}) then
 									table.insert(needs_glass, check_block_pos)
 								else
 									table.insert(needs_water_source, check_block_pos)
@@ -311,7 +311,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 		local is_flooding = false
 		for _, pos2 in ipairs(floodable_positions) do
 			local node_name = minetest.get_node(pos2).name
-			if contains({"air", "dungeon_watch:dungeon_air", "default:water_flowing", "default:lava_flowing"}, node_name)
+			if contains({"air", "randungeon:dungeon_air", "default:water_flowing", "default:lava_flowing"}, node_name)
 			   or minetest.registered_nodes[node_name]["floodable"] then
 				is_flooding = true
 			end
@@ -334,7 +334,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 end
 
 local function build_dungeon_tile_pillar(pos, pillar_type, dungeon_deph)
-	if pillar_type == "air" or pillar_type == "dungeon_watch:dungeon_air" then
+	if pillar_type == "air" or pillar_type == "randungeon:dungeon_air" then
 		return -- shouldn't happen usually anyways but whatever
 	end
 	-- dungeon_deph is the distance between dungeon levels
@@ -454,12 +454,12 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 				if x == pos.x+x_min-1 or x==pos.x+x_max+1 or z == pos.z+z_min-1 or z == pos.z+z_max+1 then
 					local block_to_build_wall_to = minetest.get_node({x=x, y=y, z=z}).name
 					-- don't replace dungeon air with our wall so we can still step out into the dungeon:
-					if not contains({"dungeon_watch:dungeon_air", "default:glass", "default:obsidian_glass"}, block_to_build_wall_to) then
+					if not contains({"randungeon:dungeon_air", "default:glass", "default:obsidian_glass"}, block_to_build_wall_to) then
 						-- don't replace waterlilys or snow but rather remove them since these are pool decorations:
 						if not contains({"flowers:flowers:waterlily_waving", "default:snow"}, block_to_build_wall_to) then
 							set_insulated_structure_block({x=x, y=y, z=z}, wall_type_1)
 						else
-							minetest.set_node({x=x, y=y, z=z}, {name="dungeon_watch:dungeon_air"})
+							minetest.set_node({x=x, y=y, z=z}, {name="randungeon:dungeon_air"})
 						end
 					end
 				end
@@ -471,7 +471,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 	for _, x in ipairs({pos.x+x_min-1, pos.x+x_max+1}) do
 		for _, z in ipairs({pos.z+z_min-1, pos.z+z_max+1}) do
 			for y = pos.y+dungeon_deph, pos.y+dungeon_deph+2 do
-				if minetest.get_node({x=x, y=y, z=z}).name == "dungeon_watch:dungeon_air" then
+				if minetest.get_node({x=x, y=y, z=z}).name == "randungeon:dungeon_air" then
 					entry_found = true
 				end
 			end
@@ -519,10 +519,10 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 		for _, dir in ipairs(dirs) do
 			local a, b, a_min, a_max, b_tunnelstart, tunneldir = unpack(dir)
 			local p
-			if minetest.find_node_near({[a]=pos[a]+a_min, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+2*tunneldir}, 1, {name="dungeon_watch:dungeon_air"})
-			or minetest.find_node_near({[a]=pos[a]+a_max, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+2*tunneldir}, 1, {name="dungeon_watch:dungeon_air"})
-			or minetest.find_node_near({[a]=pos[a]+a_min, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+3*tunneldir}, 1, {name="dungeon_watch:dungeon_air"})
-			or minetest.find_node_near({[a]=pos[a]+a_max, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+3*tunneldir}, 1, {name="dungeon_watch:dungeon_air"}) then
+			if minetest.find_node_near({[a]=pos[a]+a_min, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+2*tunneldir}, 1, {name="randungeon:dungeon_air"})
+			or minetest.find_node_near({[a]=pos[a]+a_max, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+2*tunneldir}, 1, {name="randungeon:dungeon_air"})
+			or minetest.find_node_near({[a]=pos[a]+a_min, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+3*tunneldir}, 1, {name="randungeon:dungeon_air"})
+			or minetest.find_node_near({[a]=pos[a]+a_max, y=pos.y+dungeon_deph+1, [b]=pos[b]+b_tunnelstart+3*tunneldir}, 1, {name="randungeon:dungeon_air"}) then
 				for a_value = pos[a]+a_min, pos[a]+a_max do
 					for b_value = pos[b]+b_tunnelstart+tunneldir*1, pos[b]+b_tunnelstart+tunneldir*4, tunneldir do
 						-- make passage
@@ -544,7 +544,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 					local b_value = pos[b]+b_tunnelstart+tunneldir*5
 					for y = pos.y+dungeon_deph+1, pos.y+dungeon_deph+2 do
 						p = {[a]=a_value, y=y, [b]=b_value}
-						if not contains({"flowers:waterlily_waving", "default:snow", "dungeon_watch:dungeon_air"}, minetest.get_node(p).name) then
+						if not contains({"flowers:waterlily_waving", "default:snow", "randungeon:dungeon_air"}, minetest.get_node(p).name) then
 							set_insulated_structure_block(p, wall_type_1)
 						end
 					end
@@ -554,7 +554,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 					for b_value = pos[b]+b_tunnelstart+tunneldir*1, pos[b]+b_tunnelstart+tunneldir*4, tunneldir do
 						for y = pos.y+dungeon_deph+1, pos.y+dungeon_deph+2 do
 							local p = {[a]=a_value, y=y, [b]=b_value}
-							if not contains({"flowers:waterlily_waving", "default:snow", "dungeon_watch:dungeon_air"}, minetest.get_node(p).name) then
+							if not contains({"flowers:waterlily_waving", "default:snow", "randungeon:dungeon_air"}, minetest.get_node(p).name) then
 								set_insulated_structure_block(p, wall_type_1)
 							end
 						end
@@ -688,9 +688,9 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 		local nature_metadata = {}
 		if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
 			if math.random() < 0.5 then
-				nature = "dungeon_watch:pretty_forest"
+				nature = "randungeon:pretty_forest"
 			else
-				nature = "dungeon_watch:swampy_forest"
+				nature = "randungeon:swampy_forest"
 			end
 			nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature)
 		end
@@ -807,7 +807,7 @@ local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type
 		for x = 1, width * 10 do
 			for z = 1, width * 10 do
 				for y = 0, dungeon_deph do
-					if minetest.get_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}).name == "dungeon_watch:dungeon_air" then
+					if minetest.get_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}).name == "randungeon:dungeon_air" then
 						minetest.set_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}, {name="air"})
 					end
 				end
@@ -816,8 +816,8 @@ local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type
 	end
 end
 
-dungeon_watch_finished_dungeons = {}
-dungeon_watch_make_dungeon_function_container = {}
+randungeon_finished_dungeons = {}
+randungeon_make_dungeon_function_container = {}
 dungeon_generation_started = {}
 
 local function make_dungeon_once_generated(blockpos, action, calls_remaining, param)
@@ -830,7 +830,7 @@ local function make_dungeon_once_generated(blockpos, action, calls_remaining, pa
 	local pos2 = {x=pos.x+width*10+30, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-17, z=pos.z+width*10+30}
 	minetest.load_area(pos1, pos2)
 	-- print("dungeon build area generated.")
-	dungeon_watch_make_dungeon_function_container[1](pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, bridge_type, dungeon_deph, rim_sealed,
+	randungeon_make_dungeon_function_container[1](pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, bridge_type, dungeon_deph, rim_sealed,
 	                                                 dungeon_levels, dungeon_bottom_deph, dungeon_top_deph, random_materials, cave_percentage, light_up_corridors,
 													 gold_pools, treasure_block, dungeon_id)
 end
@@ -838,10 +838,10 @@ end
 local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, bridge_type, dungeon_deph, rim_sealed, dungeon_levels,
 	                  dungeon_bottom_deph, dungeon_top_deph, random_materials, cave_percentage, light_up_corridors, gold_pools, treasure_block, dungeon_id)
 	-- proload & forceload area
-	if dungeon_id == false then -- a dungeon id so we can be sure we don't generate the same dungeon twice
+	if dungeon_id == false or dungeon_id == nil then -- a dungeon id so we can be sure we don't generate the same dungeon twice
 		dungeon_id = math.random()
 		dungeon_generation_started[dungeon_id] = minetest.get_us_time() / 10000000
-	elseif contains(dungeon_watch_finished_dungeons, dungeon_id) then
+	elseif contains(randungeon_finished_dungeons, dungeon_id) then
 		print("dungeon with id " .. tostring(dungeon_id) .. " already build; aborting.")
 		return
 	end
@@ -856,16 +856,16 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		)
 		return
 	end
-	table.insert(dungeon_watch_finished_dungeons, dungeon_id)
+	table.insert(randungeon_finished_dungeons, dungeon_id)
 	print("Build area for dungeon with dungeon_id " .. tostring(dungeon_id) .. " generated.")
-
-	pos.y = pos.y - dungeon_top_deph
 
 	-- make air bubbles
 	if not cave_percentage then
 		cave_percentage = 30
 	end
 	add_artificial_caves(pos, width, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph, cave_percentage/100, dungeon_top_deph)
+
+	pos.y = pos.y - dungeon_top_deph
 
 	-- make dungeon maps & materials & room styles:
 	local dungeon_maps = {generate_dungeon_map(width, rim_sealed)}
@@ -913,7 +913,7 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		roof_type = materials[i].roof_type
 		pillar_type = materials[i].pillar_type
 		bridge_type = materials[i].bridge_type
-		room_style = room_styles[i]
+		local room_style = room_styles[i]
 		-- determine pillar and staircase height
 		local pillar_height = dungeon_deph
 		local staircase_height = dungeon_deph
@@ -931,12 +931,12 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		for z = 1, width * 10 do
 			-- for y = -dungeon_levels*dungeon_deph-1, dungeon_deph do
 			for y = -(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-17, dungeon_top_deph+10 do
-				if minetest.get_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}).name == "dungeon_watch:dungeon_air" then
-					if not light_up_corridors then
-						minetest.set_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}, {name="air"})
-					else
-						minetest.set_node({x=pos.x+x, y=pos.y+y, z=pos.z+z}, {name="dungeon_watch:air_glowing"})
-					end
+				local p = {x=pos.x+x, y=pos.y+y, z=pos.z+z}
+				local current_node = minetest.get_node(p).name
+				if contains({"randungeon:dungeon_air", "air"}, current_node) and light_up_corridors then
+					minetest.set_node(p, {name="randungeon:air_glowing"})
+				elseif current_node == "randungeon:dungeon_air" then
+					minetest.set_node(p, {name="air"})
 				end
 			end
 		end
@@ -948,7 +948,7 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	      tostring(minetest.get_us_time() / 10000000 - dungeon_generation_started[dungeon_id]) .. " seconds.")
 end
 
-dungeon_watch_make_dungeon_function_container[1] = make_dungeon
+randungeon_make_dungeon_function_container[1] = make_dungeon
 
 return {
     make_dungeon_tile = make_dungeon_tile,

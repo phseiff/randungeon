@@ -2,7 +2,7 @@
 -- Helper Functions
 --
 
-local mod_path = minetest.get_modpath("dungeon_watch")
+local mod_path = minetest.get_modpath("randungeon")
 local helper_functions = dofile(mod_path.."/helpers.lua")
 local contains = helper_functions.contains
 local intersects = helper_functions.intersects
@@ -16,7 +16,7 @@ local function make_random_dungeon_material_scheme()
 	-- all available materials
 	local available_materials = {
 		--"default:brick",
-		"dungeon_watch:bookshelf",
+		"randungeon:bookshelf",
 		"default:desert_sandstone", "default:desert_sandstone_block", "default:desert_sandstone_brick",
 		"default:desert_cobble", "default:desert_stone", "default:desert_stone_block", "default:desert_stonebrick",
 		"default:cobble", "default:stone", "default:stone_block", "default:stonebrick",
@@ -97,7 +97,7 @@ local function rate_dungeon_materials(materials)
 		{"default:cobble", "default:stone", "default:stone_block", "default:stonebrick"},
 		{"default:sandstone", "default:sandstone_block",  "default:sandstonebrick"}, 
 		{"default:silver_sandstone", "default:silver_sandstone_block", "default:silver_sandstone_brick"},
-		{"default:aspen_wood", "default:acacia_wood", "default:pine_wood", "default:wood", "dungeon_watch:bookshelf"},
+		{"default:aspen_wood", "default:acacia_wood", "default:pine_wood", "default:wood", "randungeon:bookshelf"},
 		{"default:stone"},
 		{"default:meselamp"},
 		{"air"}
@@ -179,13 +179,13 @@ local function rate_dungeon_materials(materials)
 		score = score - 0.5
 	end
 	-- shelves should align with the roof
-	if materials.wall_type_1 == "dungeon_watch:bookshelf" and materials.wall_type_2 == "air" then
+	if materials.wall_type_1 == "randungeon:bookshelf" and materials.wall_type_2 == "air" then
 		score = score - 2
-	elseif materials.wall_type_1 == "dungeon_watch:bookshelf" and materials.wall_type_2 ~= "dungeon_watch:bookshelf" then
+	elseif materials.wall_type_1 == "randungeon:bookshelf" and materials.wall_type_2 ~= "randungeon:bookshelf" then
 		score = score - 3
 	end
 	-- no shelves as floor or roof
-	if contains({materials.floor_type, materials.roof_type}, "dungeon_watch:bookshelf") then
+	if contains({materials.floor_type, materials.roof_type}, "randungeon:bookshelf") then
 		score = score - 10
 	end
 	-- discourage wooden walls
@@ -197,7 +197,7 @@ local function rate_dungeon_materials(materials)
 	-- discourage wooden pillars
 	if contains({"default:aspen_wood", "default:acacia_wood", "default_pine_wood", "default:wood"}, materials.pillar_tpe) then
 		score = score - 3
-	elseif materials.pillar_type == "dungeon_watch:bookshelf" then
+	elseif materials.pillar_type == "randungeon:bookshelf" then
 		score = score - 5
 	end
 	-- reward identical upper and lower wall
@@ -215,7 +215,7 @@ local function rate_dungeon_materials(materials)
 		score = score - 2
 	end
 	-- nonetheless, reward for bookshelves
-	if contains(all_materials, "dungeon_watch:bookshelf") then
+	if contains(all_materials, "randungeon:bookshelf") then
 		score = score + 2
 	end
 	-- reward for cobble-based pillars
@@ -285,8 +285,6 @@ local function get_good_material_set(old_material_set)
 		end
 	end
 	return best_material_set
-	-- {best_material_set.floor_type, best_material_set.wall_type_1, best_material_set.wall_type_2, best_material_set.roof_type, best_material_set.pillar_type,
-    --         best_material_set.bridge_type}
 end
 
 return {

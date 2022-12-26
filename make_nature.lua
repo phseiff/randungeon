@@ -26,7 +26,7 @@ local function make_waterlilie(pos)
         if block == "air" then
             minetest.set_node({x=pos.x, y=pos.y+y, z=pos.z}, {name="flowers:waterlily_waving", param2=math.random(0, 3)})
         end
-        if block ~= "default:water_source" and block ~= "dungeon_watch:water_source" then
+        if block ~= "default:water_source" and block ~= "randungeon:water_source" then
             break
         end
     end
@@ -86,7 +86,7 @@ for every pos we want to do this:
     set_node(pos, node)
     set_meta(pos, meta)
 [do other stuff]
-for every pos where a dungeon_watch:pretty_forest is:
+for every pos where a randungeon:pretty_forest is:
     make_nature(pos)
 --]]
 
@@ -135,7 +135,7 @@ local TESTING_CAVES = false
 
 local function make_pretty_forest(pos)
 
-    if minetest.get_node(pos).name ~= "dungeon_watch:pretty_forest" then
+    if minetest.get_node(pos).name ~= "randungeon:pretty_forest" then
         print(1 / 0)
     end
     
@@ -178,7 +178,7 @@ local function make_pretty_forest(pos)
         end
 
     -- set sand or gravel if under water
-    elseif node_above == "default:water_source" or node_above == "dungeon_watch:water_source" then
+    elseif node_above == "default:water_source" or node_above == "randungeon:water_source" then
         if math.random() < 0.5 then
             minetest.set_node(pos, {name="default:sand"})
         else
@@ -195,11 +195,11 @@ local function make_pretty_forest(pos)
     end
 end
 
-minetest.register_node("dungeon_watch:pretty_forest", {
+minetest.register_node("randungeon:pretty_forest", {
     groups = {not_in_creative_inventory = 1, make_nature_block = 1},
     -- make it so manually placing the node also works
     after_place_node = function(pos, placer, itemstack, pointed_thing)
-        if minetest.get_node(pos).name == "dungeon_watch:pretty_forest" then
+        if minetest.get_node(pos).name == "randungeon:pretty_forest" then
             minetest.get_meta(pos):from_table({fields={water_lilies="true", mese_lamps="false", mese_lamps_if_mese_lamps="true", can_have_apples="true"}})
             make_pretty_forest(pos)
         end
@@ -257,7 +257,7 @@ end
 
 local function make_swampy_forest(pos)
 
-    if minetest.get_node(pos).name ~= "dungeon_watch:swampy_forest" then
+    if minetest.get_node(pos).name ~= "randungeon:swampy_forest" then
         return
     end
     
@@ -304,7 +304,7 @@ local function make_swampy_forest(pos)
 
         -- try deeper water if it can't flow away
         if deep_water_is_possible and math.random() < 3/4 then
-            minetest.set_node(pos2, {name="dungeon_watch:water_source"})
+            minetest.set_node(pos2, {name="randungeon:water_source"})
             if dark_dirt and math.random() < 1/5 then
                 minetest.set_node(pos1, {name="default:permafrost"})
             elseif math.random() < 0.5 then
@@ -317,7 +317,7 @@ local function make_swampy_forest(pos)
             end
         -- try shallower water otherwise, e.g. for steeper terrain or crater
         elseif shallow_water_is_possible and not deep_water_is_possible and (has_crater and math.random() < 9/10 or math.random() < 0.5) then
-            minetest.set_node(pos1, {name="dungeon_watch:water_source"})
+            minetest.set_node(pos1, {name="randungeon:water_source"})
             if water_lilies and math.random() < 1/15 then
                 make_waterlilie(pos1)
             end
@@ -387,11 +387,11 @@ local function make_swampy_forest(pos)
     end
 end
 
-minetest.register_node("dungeon_watch:swampy_forest", {
+minetest.register_node("randungeon:swampy_forest", {
     groups = {not_in_creative_inventory = 1, make_nature_block = 1},
     -- make it so manually placing the node also works
     after_place_node = function(pos, placer, itemstack, pointed_thing)
-        if minetest.get_node(pos).name == "dungeon_watch:swampy_forest" then
+        if minetest.get_node(pos).name == "randungeon:swampy_forest" then
             minetest.get_meta(pos):from_table({fields={water_lilies="true", mese_lamps="false", mese_lamps_if_mese_lamps="true"}})
             make_swampy_forest(pos)
         end
@@ -402,9 +402,9 @@ minetest.register_node("dungeon_watch:swampy_forest", {
 -- GENERAL FUNCTIONS
 
 local function make_nature(pos)
-    if minetest.get_node(pos).name == "dungeon_watch:pretty_forest" then 
+    if minetest.get_node(pos).name == "randungeon:pretty_forest" then 
         make_pretty_forest(pos)
-    elseif minetest.get_node(pos).name == "dungeon_watch:swampy_forest" then
+    elseif minetest.get_node(pos).name == "randungeon:swampy_forest" then
         make_swampy_forest(pos)
     else
         print(1 / 0)
@@ -420,9 +420,9 @@ local function make_nature_in_area(area_border1, area_border2)
 end
 
 local function make_metadata_for_nature(pos, nature_block)
-    if nature_block == "dungeon_watch:pretty_forest" then 
+    if nature_block == "randungeon:pretty_forest" then 
         return make_metadata_for_pretty_forest()
-    elseif nature_block == "dungeon_watch:swampy_forest" then
+    elseif nature_block == "randungeon:swampy_forest" then
         return make_metadata_for_swampy_forest()
     else
         print(1 / 0)
