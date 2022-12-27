@@ -110,7 +110,7 @@ minetest.register_craftitem("randungeon:door_item", {
 			minetest.chat_send_player(user:get_player_name(), "Can't make door at the thing you pointed at.")
 		end
         local inv_materials = get_player_inv_materials(user)
-        local door, doorframe = unpack(get_door_and_doorframe_materials(inv_materials))
+        local door, doorframe = unpack(get_door_and_doorframe_materials(inv_materials, pos))
         if math.random() < 0.5 then
             door = door .. "_mirrored"
             if doorframe then
@@ -156,7 +156,7 @@ local function place_doubledoor_or_double_doorframe(pos1, pos2, dir_name, door_b
 end
 
 local function place_doubledoor_based_on_materials(pos1, pos2, dir_name, materials, no_doorframes)
-    local door, doorframe = unpack(get_door_and_doorframe_materials(materials))
+    local door, doorframe = unpack(get_door_and_doorframe_materials(materials, pos1))
     place_doubledoor_or_double_doorframe(pos1, pos2, dir_name, door)
     if doorframe and not no_doorframes then
         place_doubledoor_or_double_doorframe({x=pos1.x, y=pos1.y+1, z=pos1.z}, {x=pos2.x, y=pos2.y+1, z=pos2.z}, dir_name, doorframe)

@@ -41,6 +41,9 @@ if generation_enabled then
 
     -- make dungeons spawn naturally
     minetest.register_on_generated(function(minpos, maxpos, blockseed)
+        if randungeon.TURN_OFF_NATURAL_DUNGEO_GENERATION then
+            return -- <- option for other mods to deactivate natural dungeon generation
+        end
         local n = 200 -- every 200 blocks we can (!!) build a dungeon
         minpos.x = math.ceil(minpos.x / n) * n
         minpos.z = math.ceil(minpos.z / n) * n

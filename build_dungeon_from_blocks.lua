@@ -890,7 +890,13 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		table.insert(room_styles, make_room_style(materials[i], level_above_room_style))
 		if i == 1 then
 			-- make highest levels frozen/ not frozen state depend on biome
-			local heat = minetest.get_biome_data({x=pos.x+10*width/2, y=0, z=pos.z+10*width/2}).heat
+			local biome_data = minetest.get_biome_data({x=pos.x+10*width/2, y=0, z=pos.z+10*width/2})
+			local heat
+			if biome_data == nil then
+				heat = 50
+			else
+				heat = biome_data.heat
+			end
 			room_styles[i].frozen = (heat < 50)
 		end
 	end
@@ -949,6 +955,8 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 end
 
 randungeon_make_dungeon_function_container[1] = make_dungeon
+
+randungeon.make_dungeon = make_dungeon
 
 return {
     make_dungeon_tile = make_dungeon_tile,

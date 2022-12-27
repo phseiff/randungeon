@@ -50,9 +50,12 @@ local stone_ground_blocks = {
 	"default:silver_sandstone", "default:silver_sandstone_block", "default:silver_sandstone_brick"
 }
 local function get_solid_air_block_replacement(pos, cobbelify)
-	-- if we want to set an air block in a place with air, but actually need a structure block there for structurl reasons
+	-- if we want to set an air block in a place with air, but actually need a structure block there for structure reasons
 	local biome_data = minetest.get_biome_data(pos)
-	local biome_name = minetest.get_biome_name(data.biome)
+	if biome_data == nil then
+		return "default:stone"
+	end
+	local biome_name = minetest.get_biome_name(biome_data.biome)
 	local stone_type = minetest.registered_biomes[biome_name].node_stone or "default:stone"
 	print("biome stone block " .. stone_type)
 	if stone_type == "default:stone" and cobbelify then
@@ -66,8 +69,7 @@ local function get_solid_air_block_replacement(pos, cobbelify)
 	end
 end
 
-
-return {
+local helper_functions = {
     contains = contains,
     intersects = intersects,
     bool_to_number = bool_to_number,
@@ -75,3 +77,5 @@ return {
 	is_even = is_even,
 	get_solid_air_block_replacement = get_solid_air_block_replacement
 }
+randungeon.helper_functions = helper_functions
+return helper_functions

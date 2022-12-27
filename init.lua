@@ -2,6 +2,8 @@
 -- Include parts of the mod defined elsewhere
 --
 
+randungeon = {}
+
 local mod_path = minetest.get_modpath("randungeon")
 
 -- Dungeon Map Generator
