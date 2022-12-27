@@ -244,3 +244,11 @@ There are also some blocks that are placed to mark certain positions during dung
 ![530,298,c](textures/randungeon_screenshot.5.png)
 
 ![530,298,c](textures/randungeon_screenshot.6.png)
+
+## Better Gold Blocks
+
+I recommend replacing the `default_gold_block.png` texture in the default mod with the alternative texture provided by this mod, to make treasure rooms/pools look nicer.
+
+![60,60,c](textures/default_gold_block.png)
+
+^-- the texture in question
