@@ -65,10 +65,14 @@ minetest.register_craftitem("randungeon:bridge_type_3", {
 
 -- Manual
 
+local readme_file = io.open(mod_path.."/README.md", "rb")
+local readme_text = readme_file:read("*a")
+readme_text = string.gsub(readme_text, "textures/", "")
+readme_file:close()
 local dungeon_manual_formspec = "size[8,10]" ..
 				                --"scroll_container[0.3,0;9.5,10.8;manual_scrollbar;vertical]" .. 
 				                -- md2f.md2ff(0,0,7.5,25, mod_path.."/README.md") ..
-								md2f.md2ff(0.3,0,8,10.8, mod_path.."/README.md") ..
+								md2f.md2f(0.3,0,8,10.8, readme_text) ..
 				                --"scroll_container_end[]" ..
 				                --"scrollbar[7.6,0;0.2,9;vertical;manual_scrollbar;0]" ..
 								"button[0,6.3;8,8;exit_manual;Close]"

@@ -14,7 +14,7 @@ These dungeons can range from 10 to 50 levels deep, weighted towards shallower d
 Note that dungeon generation can take many seconds and that during this time many normal operations of ones world (e.g. crops growing) will be blocked.
 You may consider deactivating dungeon generation (or not playing with this mod) if this bothers you.
 
-![530,62,c](randungeon_image_dungeon_generation_settings.png)
+![530,62,c](textures/randungeon_image_dungeon_generation_settings.png)
 
 
 There are severals new settings added to the "All Settings" page of minetest (under "Mods -> randungeon") for this; these being:
@@ -48,13 +48,13 @@ There are items for this ("Dungeon Spawn Sticks) that you can left-click with to
 
 ### Randomized Dungeon Spawn Stick
 
-![530,132,c](randungeon_image_dungeon_stick_4.png)
+![530,132,c](textures/randungeon_image_dungeon_stick_4.png)
 
 This item creates a dungeon underneath and sideways from you, following the options given in the "Make Dungeon" Inventory tab.
 
 The tab looks as follows, with its default options:
 
-![530,348,c](randungeon_settings_rand.png)
+![530,348,c](textures/randungeon_settings_rand.png)
 
 Keep in mind that changing size of the dungeon can cause dungeon generation to take proportionally (and for some steps/options even quadratucally/cubically) longer.
 
@@ -78,7 +78,7 @@ There are pillars between each level of the dungeon, one per segment (provided t
 
 `max height of top staircase`:
 
-The staircase of the upmost dungeon doesn't just need to reach the upper level (since there is none) but rather the ground above, so it needs to be significantly heighter that the other staircases. This option is the height of the upmost staircases. The staircases that go up from the upmost level will cut off as soon as they reach the surface, thought, so this is merely the max height of them. Must be an int and defaults to 100.
+The staircase of the upmost dungeon doesn't just need to reach the upper level (since there is none) but rather the ground above, so it needs to be significantly higher that the other staircases. This option is the height of the upmost staircases. The staircases that go up from the upmost level will cut off as soon as they reach the surface, thought, so this is merely the max height of them. Must be an int and defaults to 100.
 
 `max % of blocks taken up by bubble caves`:
 
@@ -119,13 +119,13 @@ Can be clicked to read this manual.
 
 ### Unrandomized Dungeon Spawn Stick (mostly Debug Item)
 
-![530,132,c](randungeon_image_dungeon_stick_3.png)
+![530,132,c](textures/randungeon_image_dungeon_stick_3.png)
 
 This item creates a semi-randomized dungeon underneath and sideways from you, following the options given in the "Make Dungeon" Inventory tab, as well as, in addition, the options n the "Make Dungeon (unrand)" tab. Its layout, rooms and bubble caves are randomized in the same way they are for normal randomized dungeons, but the materials it uses and the bridge type are set via the "Make Dungeon (unrand)" tab for the entire dungeon instead of randomized for every level.
 
 The "Make Dungeon (unrand)" tab looks as follows, with its default options:
 
-![530,348,c](randungeon_settings_unrand.png)
+![530,348,c](textures/randungeon_settings_unrand.png)
 
 Its options work as follows:
 
@@ -169,13 +169,13 @@ Can be clicked to read this manual.
 
 ### Unrandomized Dungeon Level Spawn Stick (mostly Debug Item)
 
-![530,132,c](randungeon_image_dungeon_stick_2.png)
+![530,132,c](textures/randungeon_image_dungeon_stick_2.png)
 
 This item creates a single semi-randomized dungeon level underneath and sideways from you, following the same options given in the "Make Dungeon" and "Dungeon Maker (unrand)" Inventory tab that the two tools above (Unrandomized Dungeon Spawn Stick and Randomized Dungeon Spawn Stick) follow. It comes without bubbly caves and is not considered to be a "final level" or "first level" for purposes like treasure room placement and staircase/pillar length.
 
 ### Unrandomized Dungeon Tile Spawn Stick (mostly Debug Item)
 
-![530,132,c](randungeon_image_dungeon_stick_1.png)
+![530,132,c](textures/randungeon_image_dungeon_stick_1.png)
 
 This item creates a single non-randomized dungeon tile/segment around where you click, without any room in it and without any of the things that the Unrandomized Dungeon Level Spawn Stick's results are missing.
 
@@ -233,14 +233,14 @@ There are also some blocks that are placed to mark certain positions during dung
 
 ## Some Images
 
-![530,298,c](randungeon_screenshot.1.png)
+![530,298,c](textures/randungeon_screenshot.1.png)
 
-![530,298,c](randungeon_screenshot.2.png)
+![530,298,c](textures/randungeon_screenshot.2.png)
 
-![530,298,c](randungeon_screenshot.3.png)
+![530,298,c](textures/randungeon_screenshot.3.png)
 
-![530,298,c](randungeon_screenshot.4.png)
+![530,298,c](textures/randungeon_screenshot.4.png)
 
-![530,298,c](randungeon_screenshot.5.png)
+![530,298,c](textures/randungeon_screenshot.5.png)
 
-![530,298,c](randungeon_screenshot.6.png)
+![530,298,c](textures/randungeon_screenshot.6.png)
