@@ -136,7 +136,7 @@ local TESTING_CAVES = false
 local function make_pretty_forest(pos)
 
     if minetest.get_node(pos).name ~= "randungeon:pretty_forest" then
-        print(1 / 0)
+        print("oh noes! pos: " .. minetest.pos_to_string(pos))
     end
     
     local metadata = minetest.get_meta(pos):to_table().fields
@@ -407,7 +407,7 @@ local function make_nature(pos)
     elseif minetest.get_node(pos).name == "randungeon:swampy_forest" then
         make_swampy_forest(pos)
     else
-        print(1 / 0)
+        print("oh noes !! pos: " .. minetest.pos_to_string(pos))
     end
 end
 
@@ -425,7 +425,7 @@ local function make_metadata_for_nature(pos, nature_block)
     elseif nature_block == "randungeon:swampy_forest" then
         return make_metadata_for_swampy_forest()
     else
-        print(1 / 0)
+        print("oh noes!! pos: " .. minetest.pos_to_string(pos))
     end
 end
 

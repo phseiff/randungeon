@@ -213,6 +213,26 @@ There are also exemplary Treasure Blocks used as the default value for treasure 
 
 ### Unobtainable blocks:
 
+`Doors`:
+
+The dungeon has doors in it, which are unobtainable in that
+
+• they only drop the block they were made from when dug
+
+• they aren't in the creative inventory
+
+• they consist of multiple parts each in contra-intuitive ways so even getting the item via command doesn't make it easily constructable
+
+These doors are different from normal minetest game doors in mor eways than just their looks, in that:
+
+• they are double doors with both sides opening
+
+• they come in all different wood materials that the mod uses
+
+• they have a separate doorframe block above them, which comes in all block types that the mod uses
+
+• doorframe and door are dug separately, and don't drop themselves but rather their material, as mentioned above
+
 `Technical blocks`:
 
 There are some blocks that mimic blocks already present in minetest game, but display alternative behavior, that are used in some part of the dungeon (not necessarily in all parts that the block they mimic is used in, though) such as
@@ -227,7 +247,7 @@ There are some blocks that mimic blocks already present in minetest game, but di
 
 None of these blocks are obtainable without commands; trying to obtain one of them the usual way simply yields the block it is mimiking.
 
-`Technical Blocks`:
+`Very Technical Blocks`:
 
 There are also some blocks that are placed to mark certain positions during dungeon generation, all of whem get removed at the end of dungeon generation, so you will never get to see them during normal gameplay.
 

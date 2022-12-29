@@ -52,11 +52,8 @@ if generation_enabled then
         end
         for x = minpos.x, maxpos.x, n do
             for z = minpos.z, maxpos.z, n do
-                print(minetest.pos_to_string({x=x, y=minpos.y, z=z}))
-                print(minetest.pos_to_string({x=x, y=maxpos.y, z=z}))
                 local pos = {x=x, y=0, z=z}
                 if math.random() < dungeon_chance then
-                    print("Wawa: " ..minetest.pos_to_string(pos))
                     local pos = {x=x, y=200, z=z}
                     local levels
                     local rand = math.random()
@@ -84,7 +81,6 @@ if generation_enabled then
                         nil -- dungeon id
                     )
                 end
-                print("---")
             end
         end
     end)

@@ -455,11 +455,12 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 					local block_to_build_wall_to = minetest.get_node({x=x, y=y, z=z}).name
 					-- don't replace dungeon air with our wall so we can still step out into the dungeon:
 					if not contains({"randungeon:dungeon_air", "default:glass", "default:obsidian_glass"}, block_to_build_wall_to) then
-						-- don't replace waterlilys or snow but rather remove them since these are pool decorations:
-						if not contains({"flowers:flowers:waterlily_waving", "default:snow"}, block_to_build_wall_to) then
-							set_insulated_structure_block({x=x, y=y, z=z}, wall_type_1)
+						local p = {x=x, y=y, z=z}
+						-- don't replace waterlilys or snow if underground, but rather remove them since these are pool decorations:
+						if contains({"flowers:waterlily_waving", "default:snow"}, block_to_build_wall_to) and minetest.get_natural_light(p) < 4 then
+							minetest.set_node(p, {name="randungeon:dungeon_air"})
 						else
-							minetest.set_node({x=x, y=y, z=z}, {name="randungeon:dungeon_air"})
+							set_insulated_structure_block(p, wall_type_1)
 						end
 					end
 				end
