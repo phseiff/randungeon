@@ -144,7 +144,7 @@ local function make_unconnected_room_style(materials)
 	if capped_comfy_style > 0 then
 		no_doors_chance = no_doors_chance - 0.2 * (capped_comfy_style / 6)
 	elseif capped_comfy_style < 0 then
-		no_doors_chance = no_doors_chance + 0.35 * (capped_comfy_style / -4)
+		no_doors_chance = no_doors_chance + 0.4 * (capped_comfy_style / -4)
 	end
 	local corridors_have_doors = not (math.random() < no_doors_chance)
 

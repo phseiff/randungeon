@@ -57,7 +57,6 @@ local function get_solid_air_block_replacement(pos, cobbelify)
 	end
 	local biome_name = minetest.get_biome_name(biome_data.biome)
 	local stone_type = minetest.registered_biomes[biome_name].node_stone or "default:stone"
-	print("biome stone block " .. stone_type)
 	if stone_type == "default:stone" and cobbelify then
 		return "default:cobble"
 	elseif stone_type == "default:desert_stone" then
@@ -69,13 +68,48 @@ local function get_solid_air_block_replacement(pos, cobbelify)
 	end
 end
 
+local function is_in_frozen_biome(pos)
+	local biome_data = minetest.get_biome_data(pos)
+	if biome_data == nil then
+		return nil
+	end
+	local biome_name = minetest.get_biome_name(biome_data.biome)
+	local biome_definition = minetest.registered_biomes[biome_name]
+	if biome_definition.heat_point <= 25 then
+		return true
+	end
+	local biome_blocks = {
+		biome_definition.node_dust,
+		biome_definition.node_top,
+		biome_definition.node_filler,
+		biome_definition.node_stone,
+		biome_definition.node_water_top,
+		biome_definition.node_river_water,
+		biome_definition.node_riverbed,
+	}
+	local cold_blocks = {
+		"default:snowblock", "default:snow", "default:dirt_with_snow",
+		"default:ice", "default:cave_ice", 
+	}
+	if intersects(biome_blocks, cold_blocks) then
+		return true
+	end
+	for _, decoration_definition in ipairs(minetest.registered_decorations) do
+		if contains(cold_blocks, decoration_definition.decoration) and contains(decoration_definition.biomes, biome_definition.name) then
+			return true
+		end
+	end
+	return false
+end
+
 local helper_functions = {
     contains = contains,
     intersects = intersects,
     bool_to_number = bool_to_number,
 	number_to_bool = number_to_bool,
 	is_even = is_even,
-	get_solid_air_block_replacement = get_solid_air_block_replacement
+	get_solid_air_block_replacement = get_solid_air_block_replacement,
+	is_in_frozen_biome = is_in_frozen_biome
 }
 randungeon.helper_functions = helper_functions
 return helper_functions

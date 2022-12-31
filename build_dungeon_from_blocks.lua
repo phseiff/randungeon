@@ -14,6 +14,7 @@ local helper_functions = dofile(mod_path.."/helpers.lua")
 local contains = helper_functions.contains
 local intersects = helper_functions.intersects
 local bool_to_number = helper_functions.bool_to_number
+local is_in_frozen_biome = helper_functions.is_in_frozen_biome
 
 -- Dungeon Material Generator Functions
 local dungeon_materials_generator_functions = dofile(mod_path.."/dungeon_materials_generator.lua")
@@ -886,19 +887,13 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		end
 	end
 	local start_room_style = make_unconnected_room_style(start_materials)
+	local frozen = is_in_frozen_biome({x=pos.x+10*width/2, y=0, z=pos.z+10*width/2})
 	for i = 1, dungeon_levels do
 		local level_above_room_style = room_styles[i-1] or start_room_style
 		table.insert(room_styles, make_room_style(materials[i], level_above_room_style))
-		if i == 1 then
-			-- make highest levels frozen/ not frozen state depend on biome
-			local biome_data = minetest.get_biome_data({x=pos.x+10*width/2, y=0, z=pos.z+10*width/2})
-			local heat
-			if biome_data == nil then
-				heat = 50
-			else
-				heat = biome_data.heat
-			end
-			room_styles[i].frozen = (heat < 50)
+		-- make highest levels frozen/ not frozen state depend on biome
+		if i <= 2 and frozen ~= nil then
+			room_styles[i].frozen = frozen
 		end
 	end
 
