@@ -70,7 +70,7 @@ The dungeon consists of several levels, each of whom is a square-shaped horizont
 
 `amount of dungeon levels`:
 
-How many levels the dungeon should have. This must be an int >= 1, and defaults to 10. If you want to have a wide variety of very different dungeon levels in your dungeon you can crank this up to smth around 30-60.
+How many levels the dungeon should have. This must be an int >= 2, and defaults to 10. If you want to have a wide variety of very different dungeon levels in your dungeon you can crank this up to smth around 30-60.
 
 `height of bottom pillars`:
 

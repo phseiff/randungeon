@@ -183,6 +183,9 @@ local function make_unconnected_room_style(materials)
 		dont_deviate_from_room_style=false,
 		build_even_if_in_cave=false,
 		pinnacles_if_floating_in_cave=false,
+
+		-- top_deph: height of the level/ the staircases of the level
+		-- bottom_deph: deph of the level/ height of its pillars
     }
 end
 

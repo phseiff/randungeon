@@ -1,8 +1,23 @@
+
 --
--- Include parts of the mod defined elsewhere
+-- Modding Interface
 --
 
 randungeon = {}
+
+-- list of functions with call signatures like function(pos, dungeon_maps, materials, room_styles) that will be called before the dungeon is build
+-- and that can modify the map, materials, room styles, staircase&pillar height etx of individual or multiple levels.
+-- This dict exists to allow other mods to add functions that modify how dungeons are build.
+randungeon.dungeon_prebuild_modifications = {}
+
+-- list of functions with call signatures like function(pos, dungeon_maps, materials, room_styles) that will be called after the dungeon is build
+-- and that can do block modifications in the already-generated area based on information from the world and the provided tables.
+-- This dict exists to allow other mods to add functions that modify how dungeons are build.
+randungeon.dungeon_postbuild_modifications = {}
+
+--
+-- Include parts of the mod defined elsewhere
+--
 
 local mod_path = minetest.get_modpath("randungeon")
 
@@ -194,8 +209,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 		-- dungeon_levels
 		local dungeon_levels = tonumber(fields["dungeon_levels"])
-		if dungeon_levels == nil or dungeon_levels < 1 then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int >=1 instead of \"" .. fields["dungeon_levels"] .. "\"")
+		if dungeon_levels == nil or dungeon_levels < 2 then
+			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int >1 instead of \"" .. fields["dungeon_levels"] .. "\"")
 		else
 			meta:set_int("dungeon_levels", dungeon_levels)
 		end

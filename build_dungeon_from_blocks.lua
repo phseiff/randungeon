@@ -40,10 +40,14 @@ local make_metadata_for_nature = cave_nature_generator_functions.make_metadata_f
 local make_nature = cave_nature_generator_functions.make_nature
 local make_nature_in_area = cave_nature_generator_functions.make_nature_in_area
 
--- Special Rooms Generators
-local special_rooms_funcions = dofile(mod_path.."/special_rooms.lua")
-local make_treasure_level = special_rooms_funcions.make_treasure_level
-local make_treasure_rooms = special_rooms_funcions.make_treasure_rooms
+-- Treasure Rooms Generators
+local treasure_level_funcions = dofile(mod_path.."/treasure_level.lua")
+local make_treasure_level = treasure_level_funcions.make_treasure_level
+local make_treasure_rooms = treasure_level_funcions.make_treasure_rooms
+
+-- Code to make frozen levels especially frozen
+local frozen_levels_functions = dofile(mod_path.."/frozen_levels.lua")
+local freeze_frozen_levels = frozen_levels_functions.freeze_frozen_levels
 
 --
 -- Local Helper Functions
@@ -867,15 +871,8 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	end
 	add_artificial_caves(pos, width, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph, cave_percentage/100, dungeon_top_deph)
 
-	pos.y = pos.y - dungeon_top_deph
-
-	-- make dungeon maps & materials & room styles:
-	local dungeon_maps = {generate_dungeon_map(width, rim_sealed)}
+	-- make materials...
 	local materials = {}
-	local room_styles = {}
-	for i = 2, dungeon_levels do
-		table.insert(dungeon_maps, generate_dungeon_map(width, rim_sealed, dungeon_maps[i-1]))
-	end
 	local given_materials = {floor_type=floor_type, wall_type_2=wall_type_2, wall_type_1=wall_type_1, roof_type=roof_type, pillar_type=pillar_type, bridge_type=bridge_type}
 	local start_materials = make_random_dungeon_material_scheme()
 	for i = 1, dungeon_levels do
@@ -886,14 +883,30 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 			table.insert(materials, table.copy(given_materials))
 		end
 	end
+	-- ...& room styles...
+	local room_styles = {}
 	local start_room_style = make_unconnected_room_style(start_materials)
 	local frozen = is_in_frozen_biome({x=pos.x+10*width/2, y=0, z=pos.z+10*width/2})
 	for i = 1, dungeon_levels do
 		local level_above_room_style = room_styles[i-1] or start_room_style
 		table.insert(room_styles, make_room_style(materials[i], level_above_room_style))
 		-- make highest levels frozen/ not frozen state depend on biome
-		if i <= 2 and frozen ~= nil then
+		if i == 1 and frozen ~= nil then
 			room_styles[i].frozen = frozen
+		end
+	end
+	-- ...& make dungeon maps:
+	local dungeon_maps = {generate_dungeon_map(width, rim_sealed)}
+	for i = 2, dungeon_levels do
+		table.insert(dungeon_maps, generate_dungeon_map(width, rim_sealed, dungeon_maps[i-1]))
+	end
+	for i = 1, #dungeon_maps do
+		room_styles[i].top_deph = dungeon_deph
+		room_styles[i].bottom_deph = dungeon_deph
+		if i == 1 then
+			room_styles[i].top_deph = dungeon_top_deph
+		elseif i == #room_styles then
+			room_styles[i].bottom_deph = dungeon_bottom_deph
 		end
 	end
 
@@ -902,12 +915,18 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		make_treasure_level(dungeon_maps, materials, room_styles)
 	end
 	if treasure_block and treasure_block ~= "" then
-		make_treasure_rooms(dungeon_maps, materials, room_styles, pos, dungeon_deph, treasure_block)
+		make_treasure_rooms(pos, dungeon_maps, materials, room_styles, treasure_block)
+	end
+
+	-- support for custom special levels (see top of init.lua)
+	for _, func in ipairs(randungeon.dungeon_prebuild_modifications) do
+		func(pos, dungeon_maps, materials, room_styles)
 	end
 
 	-- actually build dungeon:
+	local level_pos = table.copy(pos)
 	for i = 1, dungeon_levels do
-		local level_pos = {x=pos.x, y=pos.y-((i-1)*dungeon_deph), z=pos.z}
+		level_pos.y = level_pos.y - room_styles[i].top_deph
 		-- unpack materials & room style
 		floor_type = materials[i].floor_type
 		wall_type_1 = materials[i].wall_type_1
@@ -943,6 +962,15 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 			end
 		end
 	end
+
+	-- add extra ice elements to frozen levels
+	freeze_frozen_levels(pos, dungeon_maps, materials, room_styles, frozen)
+
+	-- support for custom special levels (see top of init.lua) in ways that need to be done post-generation
+	for _, func in ipairs(randungeon.dungeon_postbuild_modifications) do
+		func(pos, dungeon_maps, materials, room_styles)
+	end
+
 	-- unforceload area
 	remove_forceload(forceloaded_area)
 	-- inform about generated dungeon
