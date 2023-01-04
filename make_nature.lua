@@ -282,7 +282,7 @@ local function make_swampy_forest(pos)
         mese_lamps = true
     end
 
-    if minetest.registered_nodes[node2].groups["water"] then
+    if minetest.registered_nodes[node2].groups.water then
         if dark_dirt and math.random() < 1/5 then
             minetest.set_node(pos1, {name="default:permafrost"})
         elseif math.random() < 0.5 then

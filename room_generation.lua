@@ -106,7 +106,7 @@ local function make_unconnected_room_style(materials)
 			to_add = 0 -- ignore this bc it's not actually a material
 		elseif material_name == "default:stone" or material_name == "default:desert_stone" or material_name == "air" then
 			to_add = -1
-		elseif minetest.registered_nodes[material_name]["groups"]["wood"] then
+		elseif minetest.registered_nodes[material_name].groups.wood then
 			to_add = 1
 		elseif material_name == "randungeon:bookshelf" then
 			to_add = 2
@@ -401,7 +401,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 				table.insert(dirs, {"x", "z"})
 			end
             local start_y = room_corner_1.y+1
-            if math.random() <= 0.7 and not minetest.registered_nodes[wall_type_1].groups["flammable"] and not minetest.registered_nodes[wall_type_2].groups["flammable"] then
+            if math.random() <= 0.7 and not minetest.registered_nodes[wall_type_1].groups.flammable and not minetest.registered_nodes[wall_type_2].groups.flammable then
                 start_y = room_corner_1.y -- <- pillars can go one block deeper than normal in many cases if they aren't woody to spice up pools
             end
 			for _, dir in ipairs(dirs) do
@@ -413,7 +413,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 							local new_pos = {}
 							new_pos[v_a] = a
 							new_pos[v_b] = b
-							new_pos["y"] = y
+							new_pos.y = y
 							if y <= room_corner_1.y+1 and pillar_material_type ~= 3 or pillar_material_type == 1 then
 								set_structure_block(new_pos, wall_type_1)
 							elseif y >= room_corner_1.y+2 or pillar_material_type == 3 then
@@ -428,7 +428,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 		-- make corner pillars:
 		elseif edge_pillars then
             local start_y = room_corner_1.y+1
-            if math.random() <= 0.7 and not minetest.registered_nodes[wall_type_1].groups["flammable"] and not minetest.registered_nodes[wall_type_2].groups["flammable"] then
+            if math.random() <= 0.7 and not minetest.registered_nodes[wall_type_1].groups.flammable and not minetest.registered_nodes[wall_type_2].groups.flammable then
                 start_y = room_corner_1.y -- <- pillars can go one block deeper than normal in many cases if they aren't woody to spice up pools
             end
 			for _, x in ipairs({room_corner_1.x+2, room_corner_2.x-2}) do
@@ -465,7 +465,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 							local new_pos = {}
 							new_pos[v_a] = a
 							new_pos[v_b] = b
-							new_pos["y"] = y
+							new_pos.y = y
 							if y == room_corner_1.y+1 then
 								set_structure_block(new_pos, wall_type_1)
 							elseif y >= room_corner_1.y+2 then
@@ -495,7 +495,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 				new_block_positions[value_a] = {
 					[params[2]] = both_room_corners[params[4]][params[2]],
 					[params[3]] = pos[params[3]] + value_a,
-					["y"] = room_corner_1.y+1
+					y           = room_corner_1.y+1
 				}
 			end
 			place_doubledoor_based_on_materials(new_block_positions[5], new_block_positions[6], params[5],
@@ -533,13 +533,13 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
         end
         -- find a good water resistent node as replacement for floor if floor isn't water resistant:
         local pool_bassin
-        if not minetest.registered_nodes[floor_type].groups["flammable"] then
+        if not minetest.registered_nodes[floor_type].groups.flammable then
             pool_bassin = floor_type
-        elseif not minetest.registered_nodes[wall_type_1].groups["flammable"] then
+        elseif not minetest.registered_nodes[wall_type_1].groups.flammable then
             pool_bassin = wall_type_1
-        elseif not minetest.registered_nodes[wall_type_2].groups["flammable"] then
+        elseif not minetest.registered_nodes[wall_type_2].groups.flammable then
             pool_bassin = wall_type_2
-        elseif not minetest.registered_nodes[roof_type].groups["flammable"] then
+        elseif not minetest.registered_nodes[roof_type].groups.flammable then
             pool_bassin = roof_type
         else
             pool_bassin = emergency_pool_bassin

@@ -209,32 +209,32 @@ local function make_treasure_rooms(dungeon_pos, dungeon_maps, materials, room_st
             end
             if x == treasure_rooms[1][1] then
                 if z < treasure_rooms[1][2] then
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_z_plus"] = true
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_z_minus"] = false
-                    dungeon_maps[i][x][z].tile_specific_room_style["door_z_plus"] = treasure_room_has_double_doors
-                    -- dungeon_maps[i][x][z].tile_specific_room_style["door_z_minus"] = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_z_plus = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_z_minus = false
+                    dungeon_maps[i][x][z].tile_specific_room_style.door_z_plus = treasure_room_has_double_doors
+                    -- dungeon_maps[i][x][z].tile_specific_room_style.door_z_minus = true
                 else
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_z_plus"] = false
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_z_minus"] = true
-                    -- dungeon_maps[i][x][z].tile_specific_room_style["door_z_plus"] = true
-                    dungeon_maps[i][x][z].tile_specific_room_style["door_z_minus"] = treasure_room_has_double_doors
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_z_plus = false
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_z_minus = true
+                    -- dungeon_maps[i][x][z].tile_specific_room_style.door_z_plus = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.door_z_minus = treasure_room_has_double_doors
                 end
-                dungeon_maps[i][x][z].tile_specific_room_style["expand_x_plus"] = false
-                dungeon_maps[i][x][z].tile_specific_room_style["expand_x_minus"] = false
+                dungeon_maps[i][x][z].tile_specific_room_style.expand_x_plus = false
+                dungeon_maps[i][x][z].tile_specific_room_style.expand_x_minus = false
             elseif z == treasure_rooms[1][2] then
                 if x < treasure_rooms[1][1] then
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_x_plus"] = true
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_x_minus"] = false
-                    dungeon_maps[i][x][z].tile_specific_room_style["door_x_plus"] = treasure_room_has_double_doors
-                    -- dungeon_maps[i][x][z].tile_specific_room_style["door_x_minus"] = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_x_plus = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_x_minus = false
+                    dungeon_maps[i][x][z].tile_specific_room_style.door_x_plus = treasure_room_has_double_doors
+                    -- dungeon_maps[i][x][z].tile_specific_room_style.door_x_minus = true
                 else
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_x_plus"] = false
-                    dungeon_maps[i][x][z].tile_specific_room_style["expand_x_minus"] = true
-                    -- dungeon_maps[i][x][z].tile_specific_room_style["door_x_plus"] = true
-                    dungeon_maps[i][x][z].tile_specific_room_style["door_x_minus"] = treasure_room_has_double_doors
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_x_plus = false
+                    dungeon_maps[i][x][z].tile_specific_room_style.expand_x_minus = true
+                    -- dungeon_maps[i][x][z].tile_specific_room_style.door_x_plus = true
+                    dungeon_maps[i][x][z].tile_specific_room_style.door_x_minus = treasure_room_has_double_doors
                 end
-                dungeon_maps[i][x][z].tile_specific_room_style["expand_z_plus"] = false
-                dungeon_maps[i][x][z].tile_specific_room_style["expand_z_minus"] = false
+                dungeon_maps[i][x][z].tile_specific_room_style.expand_z_plus = false
+                dungeon_maps[i][x][z].tile_specific_room_style.expand_z_minus = false
             end
             dungeon_maps[i][x][z].tile_specific_room_style.pillar_room = true
         end

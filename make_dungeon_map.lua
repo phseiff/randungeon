@@ -47,40 +47,40 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 		-- note tile requirements based on nighbor tiles
 		local requirements = {}
 		if x > 1 and map[x-1][z] ~= {} then
-			requirements["x_minus"] = map[x-1][z].x_plus
+			requirements.x_minus = map[x-1][z].x_plus
 		end
 		if x < width and map[x+1][z] ~= {} then
-			requirements["x_plus"] = map[x+1][z].x_minus
+			requirements.x_plus = map[x+1][z].x_minus
 		end
 		if z > 1 and map[x][z-1] ~= {} then
-			requirements["z_minus"] = map[x][z-1].z_plus
+			requirements.z_minus = map[x][z-1].z_plus
 		end
 		if z < width and map[x][z+1] ~= {} then
-			requirements["z_plus"] = map[x][z+1].z_minus
+			requirements.z_plus = map[x][z+1].z_minus
 		end
 		-- if wanted, note tile requirements based on rim of the dungeon
 		if rim_sealed then
 			if x == 1 then
-				requirements["x_minus"] = false
+				requirements.x_minus = false
 			end
 			if x == width then
-				requirements["x_plus"] = false
+				requirements.x_plus = false
 			end
 			if z == 1 then
-				requirements["z_minus"] = false
+				requirements.z_minus = false
 			end
 			if z == width then
-				requirements["z_plus"] = false
+				requirements.z_plus = false
 			end
 		end
 		local tile = {}
 		
 		-- modify nighbor tiles and choose directly if we'd have to make a dead end otherwise
 		if (
-			(requirements["x_plus"] == true and requirements["x_minus"]==false and requirements["z_plus"]==false and requirements["z_minus"]==false)
-			or (requirements["x_minus"] == true and requirements["x_plus"]==false and requirements["z_plus"]==false and requirements["z_minus"]==false)
-			or (requirements["z_plus"] == true and requirements["x_minus"]==false and requirements["x_plus"]==false and requirements["z_minus"]==false)
-			or (requirements["z_minus"] == true and requirements["x_minus"]==false and requirements["z_plus"]==false and requirements["x_plus"]==false)
+			(requirements.x_plus == true and requirements.x_minus==false and requirements.z_plus==false and requirements.z_minus==false)
+			or (requirements.x_minus == true and requirements.x_plus==false and requirements.z_plus==false and requirements.z_minus==false)
+			or (requirements.z_plus == true and requirements.x_minus==false and requirements.x_plus==false and requirements.z_minus==false)
+			or (requirements.z_minus == true and requirements.x_minus==false and requirements.z_plus==false and requirements.x_plus==false)
 		) then
 			local different_dirs = {
 				-- opposite dir and then the two ortogonal ones and x- and z-offset of index dir function to determine if index dir out of bounds:
@@ -211,9 +211,9 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 						remove_from_array(free_tiles, {x-1, z})
 					end
 				else
-					map[x][z]["stair_position"] = "x_minus"   -- we also check for the special case of dead ends and make them staircases here
-					map[x][z]["stair_orientation"] = table.remove({"z_minus", "z_plus"}, math.random(1, 2))
-					map[x][z]["is_dead_end"] = true
+					map[x][z].stair_position = "x_minus"   -- we also check for the special case of dead ends and make them staircases here
+					map[x][z].stair_orientation = table.remove({"z_minus", "z_plus"}, math.random(1, 2))
+					map[x][z].is_dead_end = true
 				end
 			end
 			if x < width and map[x][z].x_plus then
@@ -223,9 +223,9 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 						remove_from_array(free_tiles, {x+1, z})
 					end
 				else
-					map[x][z]["stair_position"] = "x_plus"
-					map[x][z]["stair_orientation"] = table.remove({"z_minus", "z_plus"}, math.random(1, 2))
-					map[x][z]["is_dead_end"] = true
+					map[x][z].stair_position = "x_plus"
+					map[x][z].stair_orientation = table.remove({"z_minus", "z_plus"}, math.random(1, 2))
+					map[x][z].is_dead_end = true
 				end
 			end
 			if z > 1 and map[x][z].z_minus then
@@ -235,9 +235,9 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 						remove_from_array(free_tiles, {x, z-1})
 					end
 				else
-					map[x][z]["stair_position"] = "z_minus"
-					map[x][z]["stair_orientation"] = table.remove({"x_minus", "x_plus"}, math.random(1, 2))
-					map[x][z]["is_dead_end"] = true
+					map[x][z].stair_position = "z_minus"
+					map[x][z].stair_orientation = table.remove({"x_minus", "x_plus"}, math.random(1, 2))
+					map[x][z].is_dead_end = true
 				end
 			end
 			if z < width and map[x][z].z_plus then
@@ -247,9 +247,9 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 						remove_from_array(free_tiles, {x, z+1})
 					end
 				else
-					map[x][z]["stair_position"] = "z_plus"
-					map[x][z]["stair_orientation"] = table.remove({"x_minus", "x_plus"}, math.random(1, 2))
-					map[x][z]["is_dead_end"] = true
+					map[x][z].stair_position = "z_plus"
+					map[x][z].stair_orientation = table.remove({"x_minus", "x_plus"}, math.random(1, 2))
+					map[x][z].is_dead_end = true
 				end
 			end
 		end
@@ -260,7 +260,7 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 		for _, group in ipairs(dungeon_groups) do
 			for i = #group, 1, -1 do
 				local x, z = unpack(group[i])
-				if level_above[x][z]["empty_spot"] then
+				if level_above[x][z].empty_spot then
 					table.remove(group, i)
 				end
 			end
@@ -298,9 +298,9 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 					local potentatial_stair_orientations = {"x_plus", "x_minus"}
 					stair_orientation = potentatial_stair_orientations[math.random(1, 2)]
 				end
-				if not stair_tile["stair_position"] then
-					stair_tile["stair_position"] = stair_position
-					stair_tile["stair_orientation"] = stair_orientation
+				if not stair_tile.stair_position then
+					stair_tile.stair_position = stair_position
+					stair_tile.stair_orientation = stair_orientation
 				end
 			end
 		end
@@ -308,10 +308,10 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
     -- mark all tiles as having pillars
     for x = 1, width do
         for z = 1, width do
-            if map[x][z]["empty_spot"] then
-                map[x][z]["has_pillar"] = false
+            if map[x][z].empty_spot then
+                map[x][z].has_pillar = false
             else
-                map[x][z]["has_pillar"] = true
+                map[x][z].has_pillar = true
             end
         end
     end
@@ -319,8 +319,8 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
     if level_above then
         for x = 1, width do
             for z = 1, width do
-                if map[x][z]["empty_spot"] then
-                    level_above[x][z]["has_pillar"] = false
+                if map[x][z].empty_spot then
+                    level_above[x][z].has_pillar = false
                 end
             end
         end
@@ -328,8 +328,8 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 	-- set rooms
 	for x = 1, width do
 		for z = 1, width do
-			if map[x][z]["empty_spot"] or map[x][z]["stair_position"] or level_above and level_above[x][z]["has_room"] then
-				map[x][z]["has_room"] = false
+			if map[x][z].empty_spot or map[x][z].stair_position or level_above and level_above[x][z].has_room then
+				map[x][z].has_room = false
 			end
 		end
 	end
@@ -338,7 +338,7 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 		local possible_rooms = {}
 		for x = 1, width do
 			for z = 1, width do
-				if map[x][z]["has_room"] == nil then
+				if map[x][z].has_room == nil then
 					table.insert(possible_rooms, {x, z})
 				end
 			end
@@ -347,7 +347,7 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 			break
 		end
 		local x, z = unpack(table.remove(possible_rooms, math.random(1, #possible_rooms)))
-		map[x][z]["has_room"] = true
+		map[x][z].has_room = true
 		room_number = room_number + 1
 		local dirs = {
 			{1, "x_plus", "x_minus", -1, 0},
@@ -366,7 +366,7 @@ local function generate_dungeon_map(width, rim_sealed, level_above)
 				if not map[pos_test[1]][pos_test[2]][dir_name_2] then
 					break
 				end
-				map[pos_test[1]][pos_test[2]]["has_room"] = false
+				map[pos_test[1]][pos_test[2]].has_room = false
 			until pos_test[dir_var] == max_dir_var
 		end
 	end

@@ -22,7 +22,7 @@ randungeon.dungeon_postbuild_modifications = {}
 local mod_path = minetest.get_modpath("randungeon")
 
 -- Dungeon Map Generator
-local generate_dungeon_map = dofile(mod_path.."/make_dungeon_map.lua")["generate_dungeon_map"]
+local generate_dungeon_map = dofile(mod_path.."/make_dungeon_map.lua").generate_dungeon_map
 
 -- Register Helper Blocks
 dofile(mod_path.."/nodes.lua")
@@ -191,65 +191,65 @@ sfinv.register_page("randungeon:make_dungeon_tile", {
 })
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if fields["dungeon_width"] ~= nil then
+	if fields.dungeon_width ~= nil then
 		local meta = player:get_meta()
 		-- dungeon_width
-		local dungeon_width = tonumber(fields["dungeon_width"])
+		local dungeon_width = tonumber(fields.dungeon_width)
 		if dungeon_width == nil or dungeon_width < 2 then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_width has to be an int >=2. Please enter an int instead of \"" .. fields["dungeon_width"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "dungeon_width has to be an int >=2. Please enter an int instead of \"" .. fields.dungeon_width .. "\"")
 		else
 			meta:set_int("dungeon_width", dungeon_width)
 		end
 		-- dungeon_deph
-		local dungeon_deph = tonumber(fields["dungeon_deph"])
+		local dungeon_deph = tonumber(fields.dungeon_deph)
 		if dungeon_deph == nil then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_deph has to be an int. Please enter an int instead of \"" .. fields["dungeon_deph"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "dungeon_deph has to be an int. Please enter an int instead of \"" .. fields.dungeon_deph .. "\"")
 		else
 			meta:set_int("dungeon_deph", dungeon_deph)
 		end
 		-- dungeon_levels
-		local dungeon_levels = tonumber(fields["dungeon_levels"])
+		local dungeon_levels = tonumber(fields.dungeon_levels)
 		if dungeon_levels == nil or dungeon_levels < 2 then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int >1 instead of \"" .. fields["dungeon_levels"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "dungeon_levels has to be an int. Please enter an int >1 instead of \"" .. fields.dungeon_levels .. "\"")
 		else
 			meta:set_int("dungeon_levels", dungeon_levels)
 		end
 		-- dungeon_bottom_deph
-		local dungeon_bottom_deph = tonumber(fields["dungeon_bottom_deph"])
+		local dungeon_bottom_deph = tonumber(fields.dungeon_bottom_deph)
 		if dungeon_bottom_deph == nil then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_bottom_deph has to be an int. Please enter an int instead of \"" .. fields["dungeon_bottom_deph"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "dungeon_bottom_deph has to be an int. Please enter an int instead of \"" .. fields.dungeon_bottom_deph .. "\"")
 		else
 			meta:set_int("dungeon_bottom_deph", dungeon_bottom_deph)
 		end
 		-- dungeon_top_deph
-		local dungeon_top_deph = tonumber(fields["dungeon_top_deph"])
+		local dungeon_top_deph = tonumber(fields.dungeon_top_deph)
 		if dungeon_top_deph == nil then
-			minetest.chat_send_player(player:get_player_name(), "dungeon_top_deph has to be an int. Please enter an int instead of \"" .. fields["dungeon_top_deph"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "dungeon_top_deph has to be an int. Please enter an int instead of \"" .. fields.dungeon_top_deph .. "\"")
 		else
 			meta:set_int("dungeon_top_deph", dungeon_top_deph)
 		end
 		-- cave_percentage
-		local dungeon_top_deph = tonumber(fields["cave_percentage"])
+		local dungeon_top_deph = tonumber(fields.cave_percentage)
 		if dungeon_top_deph == nil or dungeon_top_deph < 0 or dungeon_top_deph > 100 then
-			minetest.chat_send_player(player:get_player_name(), "cave_percentage has to be an int from 0 to 100. Please enter that instead of \"" .. fields["cave_percentage"] .. "\"")
+			minetest.chat_send_player(player:get_player_name(), "cave_percentage has to be an int from 0 to 100. Please enter that instead of \"" .. fields.cave_percentage .. "\"")
 		else
 			meta:set_int("cave_percentage", dungeon_top_deph)
 		end
 		-- light_up_corridors
-		local light_up_corridors = fields["light_up_corridors"]
+		local light_up_corridors = fields.light_up_corridors
 		if light_up_corridors ~= nil then
 			meta:set_int("light_up_corridors", bool_to_number(light_up_corridors == "true"))
 		end
 		-- gold_pools
-		local gold_pools = fields["gold_pools"]
+		local gold_pools = fields.gold_pools
 		if gold_pools ~= nil then
 			meta:set_int("gold_pools", bool_to_number(gold_pools == "true"))
 		end
 	end
 	-- open manual
-	if fields["open_manual"] then
+	if fields.open_manual then
 		minetest.show_formspec(player:get_player_name(), "randungeon:manual", dungeon_manual_formspec)
-	elseif fields["exit_manual"] then
+	elseif fields.exit_manual then
 		minetest.close_formspec(player:get_player_name(), "randungeon:manual")
 	end
 end)

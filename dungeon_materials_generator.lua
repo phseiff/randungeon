@@ -53,7 +53,7 @@ local function compare_dungeon_material_schemes(scheme1, scheme2)
 			-- end
 		end
 	end
-	similarity = similarity - 0.2 * math.abs(scheme1["bridge_type"] - scheme2["bridge_type"])
+	similarity = similarity - 0.2 * math.abs(scheme1.bridge_type - scheme2.bridge_type)
 	return similarity
 end
 

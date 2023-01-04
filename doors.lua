@@ -173,16 +173,16 @@ for _, material in ipairs(available_materials) do
             new_node[key] = attr
         end
         -- copy groups & add not_in_creative_inventory
-        new_node["groups"] = {not_in_creative_inventory = 1}
-        for group, value in pairs(node["groups"]) do
-            new_node["groups"][group] = value
+        new_node.groups = {not_in_creative_inventory = 1}
+        for group, value in pairs(node.groups) do
+            new_node.groups[group] = value
         end
         -- drawtype things
-        new_node["paramtype"] = "light"
-        new_node["paramtype2"] = "facedir"
-        new_node["drawtype"] = "nodebox"
+        new_node.paramtype = "light"
+        new_node.paramtype2 = "facedir"
+        new_node.drawtype = "nodebox"
         if mirrored == "" then
-            new_node["node_box"] = {
+            new_node.node_box = {
                 type = "fixed",
                 fixed = {
                     {2.5/8, 3/8,    -0.5, 4/8, 4/8, 0.5},
@@ -195,12 +195,12 @@ for _, material in ipairs(available_materials) do
                     {2.5/8, -1.5/8, -0.5, 4/8, 0, -7/16},
                 },
             }
-            new_node["selection_box"] = {
+            new_node.selection_box = {
                 type = "fixed",
                 fixed = {{2.5/8, 3/8, -0.5, 4/8, 4/8, 0.5}}
             }
         elseif mirrored == "_mirrored" then
-            new_node["node_box"] = {
+            new_node.node_box = {
                 type = "fixed",
                 fixed = {
                     {-4/8, 3/8,    -0.5, -2.5/8, 4/8, 0.5},
@@ -213,14 +213,14 @@ for _, material in ipairs(available_materials) do
                     {-4/8, -1.5/8, -0.5, -2.5/8, 0, -7/16},
                 },
             }
-            new_node["selection_box"] = {
+            new_node.selection_box = {
                 type = "fixed",
                 fixed = {{-4/8, 3/8, -0.5, -2.5/8, 4/8, 0.5}}
             }
         end
-        new_node["description"] = node["description"] .. " as a doorframe " .. mirrored
-        new_node["drop"] = material
-        new_node["on_construct"] = function(pos)
+        new_node.description = node.description .. " as a doorframe " .. mirrored
+        new_node.drop = material
+        new_node.on_construct = function(pos)
             minetest.get_meta(pos):set_string("dont_replace_with_air", "true")
         end
         
@@ -235,7 +235,7 @@ for _, material in ipairs(woods) do
     local node = minetest.registered_nodes[material]
 
     -- generate new texture:
-    local old_tex_name = node["tiles"][1]
+    local old_tex_name = node.tiles[1]
     local old_tex_name_rot = old_tex_name .. "\\\\^[transformR90"
     local one_door = "\\[combine\\:16x32\\:0,0=" .. old_tex_name_rot .. "\\:0,16=" .. old_tex_name_rot .. "\\:0,0=randungeon_door_overlay.png"
     local new_tex_name = "[combine:32x32:0,0=" .. one_door .. ":16,0=" .. one_door
@@ -283,20 +283,20 @@ for _, material in ipairs(woods) do
                 new_node[key] = value
             end
             -- copy groups & add not_in_creative_inventory
-            new_node["groups"] = {not_in_creative_inventory = 1}
-            for group, value in pairs(node["groups"]) do
-                new_node["groups"][group] = value
+            new_node.groups = {not_in_creative_inventory = 1}
+            for group, value in pairs(node.groups) do
+                new_node.groups[group] = value
             end
 
             -- drawtypes & stuff:
-            new_node["paramtype"] = "light"
-            new_node["paramtype2"] = "facedir"
-            new_node["drawtype"] = "nodebox"
-            new_node["drop"] = material
+            new_node.paramtype = "light"
+            new_node.paramtype2 = "facedir"
+            new_node.drawtype = "nodebox"
+            new_node.drop = material
 
             -- different rotations:
             if mirrored == "" then
-                new_node["node_box"] = {
+                new_node.node_box = {
                     type = "fixed",
                     fixed = {
                         {3/8, -0.5,    -0.5, 3.5/8, 1-1.5/8, 0.5},
@@ -308,12 +308,12 @@ for _, material in ipairs(woods) do
                         {3/8, 1-1.5/8,  0.5, 3.5/8, 1, -7/16},
                     },
                 }
-                new_node["selection_box"] = {
+                new_node.selection_box = {
                     type = "fixed",
                     fixed = {{3/8, -0.5,   -0.5, 3.5/8, 1.5-1/8, 0.5}}
                 }
             elseif mirrored == "_mirrored" then
-                new_node["node_box"] = {
+                new_node.node_box = {
                     type = "fixed",
                     fixed = {
                         {-3.5/8, -0.5,    -0.5, -3/8, 1-1.5/8, 0.5},
@@ -325,15 +325,15 @@ for _, material in ipairs(woods) do
                         {-3.5/8, 1-1.5/8,  0.5, -3/8, 1, -7/16},
                     },
                 }
-                new_node["selection_box"] = {
+                new_node.selection_box = {
                     type = "fixed",
                     fixed = {{-3.5/8, -0.5,   -0.5, -3/8, 1.5-1/8, 0.5}}
                 }
             end
 
             -- set desription and finally textures:
-            new_node["description"] = node["description"] .. " as a door " .. even .. mirrored
-            new_node["tiles"] = {
+            new_node.description = node.description .. " as a door " .. even .. mirrored
+            new_node.tiles = {
                 {name = old_tex_name.. "^[transformR90"},
                 {name = old_tex_name.. "^[transformR90"},
                 front_side,
@@ -342,7 +342,7 @@ for _, material in ipairs(woods) do
                 {name = old_tex_name.. "^[transformR90"},
             }
             -- set on_construct function to make sure tiling works right:
-            new_node["on_construct"] = function(pos)
+            new_node.on_construct = function(pos)
                 local n = minetest.get_node(pos)
                 if not is_even(pos.y) and n.name == get_door_name(material) .. "_uneven" .. mirrored then
                     n.name = get_door_name(material) .. "" .. mirrored
@@ -356,7 +356,7 @@ for _, material in ipairs(woods) do
                 meta:set_string("dont_replace_with_air", "true")
             end
             -- make door openeable:
-            new_node["on_rightclick"] = function(pos, not_recursive, _1, _2, _3)
+            new_node.on_rightclick = function(pos, not_recursive, _1, _2, _3)
                 local n = minetest.get_node(pos)
                 -- get new node:
                 if mirrored == "" then
@@ -393,7 +393,7 @@ for _, material in ipairs(woods) do
                     for _, p in ipairs({{x=pos.x+1, y=pos.y, z=pos.z}, {x=pos.x-1, y=pos.y, z=pos.z}, {x=pos.x, y=pos.y, z=pos.z+1}, {x=pos.x, y=pos.y, z=pos.z-1}}) do
                         local n = minetest.get_node(p).name
                         if n == get_door_name(material) .. even .. "_mirrored" or n == get_door_name(material) .. even then
-                            minetest.registered_nodes[n]["on_rightclick"](p, true)
+                            minetest.registered_nodes[n].on_rightclick(p, true)
                         end
                     end
                 end

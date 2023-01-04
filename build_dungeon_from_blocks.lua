@@ -73,7 +73,7 @@ local function set_structure_block(pos, name, only_replace_solid_blocks, dont_re
 			name = "default:stone"
 		end
 		local alternative = minetest.get_meta(pos):get_string("fireproof_alternative")
-		if not minetest.registered_nodes[name]["groups"]["flammable"] then
+		if not minetest.registered_nodes[name].groups.flammable then
 			minetest.set_node(pos, {name=name})
 		else
 			minetest.set_node(pos, {name=alternative})
@@ -87,7 +87,7 @@ local function set_structure_block(pos, name, only_replace_solid_blocks, dont_re
 	if name == "air" or name == "randungeon:dungeon_air" then
 		if old_node_name == "default:water_source" then
 			minetest.set_node(pos, {name="default:glass"})
-		elseif minetest.registered_nodes[old_node_name].groups["igniter"] then
+		elseif minetest.registered_nodes[old_node_name].groups.igniter then
 			minetest.set_node(pos, {name="randungeon:dungeon_air"})
 		end
 		return
@@ -181,19 +181,19 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 						no_mini_pillars_needed = false
 					end
 					-- wall 1
-					new_block_pos["y"] = pos.y+1
+					new_block_pos.y = pos.y+1
 					set_structure_block(new_block_pos, wall_type_1, omit_wall_1_in_caves and no_mini_pillars_needed)
 					-- wall 2
-					new_block_pos["y"] = pos.y+2
+					new_block_pos.y = pos.y+2
 					set_structure_block(new_block_pos, wall_type_2, omit_wall_2_in_caves and no_mini_pillars_needed)
 				end
 				for value_a = 5, 6 do
 					-- floor
 					new_block_pos[params[3]] = pos[params[3]] + value_a
-					new_block_pos["y"] = pos.y
+					new_block_pos.y = pos.y
 					set_structure_block(new_block_pos, floor_type)
 					-- roof
-					new_block_pos["y"] = pos.y+3
+					new_block_pos.y = pos.y+3
 					set_structure_block(new_block_pos, roof_type, omit_roof_in_caves)
 				end
 				-- make sure both roof sides are simmetrical
@@ -242,9 +242,9 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 					new_block_pos[params[2]] = pos[params[2]] + params[4](value_b)
 					new_block_pos[params[3]] = pos[params[3]] + value_a
 					-- fill the path with air
-					new_block_pos["y"] = pos.y+1
+					new_block_pos.y = pos.y+1
 					fill_with_dungeon_air_if_okay(new_block_pos)
-					new_block_pos["y"] = pos.y+2
+					new_block_pos.y = pos.y+2
 					fill_with_dungeon_air_if_okay(new_block_pos)
 				end
 			end
@@ -256,7 +256,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 					new_block_positions[value_a] = {
 						[params[2]] = pos[params[2]] + params[4](value_b),
 						[params[3]] = pos[params[3]] + value_a,
-						["y"] = pos.y+1
+						y           = pos.y+1
 					}
 				end
 				place_doubledoor_based_on_materials(new_block_positions[5], new_block_positions[6], params[5],
@@ -272,9 +272,9 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 			for value_a = 5, 6 do
 				new_block_pos[params[2]] = pos[params[2]] + params[4](value_b)
 				new_block_pos[params[3]] = pos[params[3]] + value_a
-				new_block_pos["y"] = pos.y+1
+				new_block_pos.y = pos.y+1
 				set_structure_block(new_block_pos, wall_type_1, omit_wall_1_in_caves)
-				new_block_pos["y"] = pos.y+2
+				new_block_pos.y = pos.y+2
 				set_structure_block(new_block_pos, wall_type_2, omit_wall_2_in_caves)
 			end
 		end
@@ -292,8 +292,8 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 					-- replace lava with water or glass
 					for i = -1, 4 do
 						if not ((i == -1 or i == 4) and (value_a == 3 or value_a == 8)) then
-							local check_block_pos = {x=new_block_pos["x"], y=pos.y + i, z=new_block_pos["z"]}
-							if minetest.registered_nodes[minetest.get_node(check_block_pos).name].groups["igniter"] then
+							local check_block_pos = {x=new_block_pos.x, y=pos.y + i, z=new_block_pos.z}
+							if minetest.registered_nodes[minetest.get_node(check_block_pos).name].groups.igniter then
 								if minetest.find_node_near(check_block_pos, 1, {"randungeon:dungeon_air"}) then
 									table.insert(needs_glass, check_block_pos)
 								else
@@ -317,7 +317,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 		for _, pos2 in ipairs(floodable_positions) do
 			local node_name = minetest.get_node(pos2).name
 			if contains({"air", "randungeon:dungeon_air", "default:water_flowing", "default:lava_flowing"}, node_name)
-			   or minetest.registered_nodes[node_name]["floodable"] then
+			   or minetest.registered_nodes[node_name].floodable then
 				is_flooding = true
 			end
 		end
@@ -399,8 +399,8 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 					local nname = minetest.get_node(p).name
 					local ndef = minetest.registered_nodes[nname]
 					if y < 0
-					or (ndef["is_ground_content"] == true and nname ~= "air" or ndef["groups"]["liquid"])
-					or (minetest.get_natural_light(p, 0.5) < 6 and not (ndef["groups"]["tree"])) then
+					or (ndef.is_ground_content == true and nname ~= "air" or ndef.groups.liquid)
+					or (minetest.get_natural_light(p, 0.5) < 6 and not (ndef.groups.tree)) then
 						found_bad_node = true
 					end
 				end
@@ -417,7 +417,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 							local p = {x=x, y=y, z=z}
 							local nname = minetest.get_node(p).name
 							local ndef = minetest.registered_nodes[nname]
-							if nname == "default:tree" or ndef["groups"]["tree"] or (ndef["groups"]["flammable"] and not ndef["groups"]["leaves"]) then
+							if nname == "default:tree" or ndef.groups.tree or (ndef.groups.flammable and not ndef.groups.leaves) then
 								minetest.set_node(p, {name="air"})
 							end
 						end
@@ -801,11 +801,11 @@ local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type
 							  tile_specific_materials.roof_type or roof_type, 
 							  tile_specific_materials.pillar_type or pillar_type,
 							  tile.x_plus, tile.x_minus, tile.z_plus, tile.z_minus,
-			                  dungeon_deph, staircase_height, pillar_height, tile["stair_position"], tile["stair_orientation"],
+			                  dungeon_deph, staircase_height, pillar_height, tile.stair_position, tile.stair_orientation,
 							  tile_specific_materials.bridge_type or bridge_type,
-							  tile["is_dead_end"],
+							  tile.is_dead_end,
 							  tile_specific_room_style or room_style,
-							  tile["has_pillar"], tile["has_room"], is_top_level)
+							  tile.has_pillar, tile.has_room, is_top_level)
 		end
 	end
 	-- replace dungeon air with normal air

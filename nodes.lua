@@ -159,11 +159,11 @@ local dungeon_water_source = {}
 for key, value in pairs(minetest.registered_nodes["default:water_source"]) do
 	dungeon_water_source[key] = value
 end
-dungeon_water_source["liquid_alternative_flowing"] = "randungeon:water_flowing"
-dungeon_water_source["liquid_alternative_source"] = "randungeon:water_source"
-dungeon_water_source["liquid_range"] = 1
-dungeon_water_source["description"] = "Water Source (with 1-block-range flow limit)\n(becomes normal water with bucket)"
-dungeon_water_source["groups"] = {water = 3, liquid = 3, cools_lava = 1, not_in_creative_inventory = 1}
+dungeon_water_source.liquid_alternative_flowing = "randungeon:water_flowing"
+dungeon_water_source.liquid_alternative_source = "randungeon:water_source"
+dungeon_water_source.liquid_range = 1
+dungeon_water_source.description = "Water Source (with 1-block-range flow limit)\n(becomes normal water with bucket)"
+dungeon_water_source.groups = {water = 3, liquid = 3, cools_lava = 1, not_in_creative_inventory = 1}
 minetest.register_node("randungeon:water_source", dungeon_water_source)
 
 -- flowing version of it
@@ -171,9 +171,9 @@ local dungeon_water_flowing = {}
 for key, value in pairs(minetest.registered_nodes["default:water_flowing"]) do
 	dungeon_water_flowing[key] = value
 end
-dungeon_water_flowing["liquid_alternative_flowing"] = "randungeon:water_flowing"
-dungeon_water_flowing["liquid_alternative_source"] = "randungeon:water_source"
-dungeon_water_flowing["liquid_range"] = 1
+dungeon_water_flowing.liquid_alternative_flowing = "randungeon:water_flowing"
+dungeon_water_flowing.liquid_alternative_source = "randungeon:water_source"
+dungeon_water_flowing.liquid_range = 1
 minetest.register_node("randungeon:water_flowing", dungeon_water_flowing)
 
 -- make it so it gives a normal water bucket when collected via bucket
@@ -192,10 +192,10 @@ local dungeon_lava_source = {}
 for key, value in pairs(minetest.registered_nodes["default:lava_source"]) do
 	dungeon_lava_source[key] = value
 end
-dungeon_lava_source["liquid_alternative_flowing"] = "randungeon:lava_flowing"
-dungeon_lava_source["liquid_alternative_source"] = "randungeon:lava_source"
-dungeon_lava_source["description"] = "Lava Source (but non-igniting)"
-dungeon_lava_source["groups"] = {lava = 3, liquid = 2, not_in_creative_inventory = 1}
+dungeon_lava_source.liquid_alternative_flowing = "randungeon:lava_flowing"
+dungeon_lava_source.liquid_alternative_source = "randungeon:lava_source"
+dungeon_lava_source.description = "Lava Source (but non-igniting)"
+dungeon_lava_source.groups = {lava = 3, liquid = 2, not_in_creative_inventory = 1}
 minetest.register_node("randungeon:lava_source", dungeon_lava_source)
 
 -- flowing version of it
@@ -203,9 +203,9 @@ local dungeon_lava_flowing = {}
 for key, value in pairs(minetest.registered_nodes["default:lava_flowing"]) do
 	dungeon_lava_flowing[key] = value
 end
-dungeon_lava_flowing["liquid_alternative_flowing"] = "randungeon:lava_flowing"
-dungeon_lava_flowing["liquid_alternative_source"] = "randungeon:lava_source"
--- dungeon_lava_flowing["groups"] = {lava = 3, liquid = 2, not_in_creative_inventory = 1, igniter = 1}
+dungeon_lava_flowing.liquid_alternative_flowing = "randungeon:lava_flowing"
+dungeon_lava_flowing.liquid_alternative_source = "randungeon:lava_source"
+-- dungeon_lava_flowing.groups = {lava = 3, liquid = 2, not_in_creative_inventory = 1, igniter = 1}
 minetest.register_node("randungeon:lava_flowing", dungeon_lava_flowing)
 
 -- make it so it gives a normal lava bucket when collected via bucket
