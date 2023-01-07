@@ -1,0 +1,47 @@
+-- This is the structure of randungeon.dungeons, a global table defined by the randugneon mod, in which descriptions of all generated dungeons
+-- in a world can be accessed by all other mods.
+
+randungeon.dungeons = {
+     _position_string = {
+          pos = {x=x, y=y, z=z},
+          bubble_caves = {
+               _some_upper_y_value = {
+                    {
+                         center_pos = _,
+                         radius = _,
+                         type = _(one of default:lava_source, default:water_source, and air),
+                         frozen = _true/false
+                         nature = _(false or name of the nature block),
+                         fill_height = false if n/a or a percentage if filled to a certain point with lava or water
+                         nature_metadata = nil or nature metadata
+                    },
+                    ... (other caves with this upper y value)
+               },
+               ... (other upper y values)
+          },
+          rooms =
+               _some_upper_y_value = {
+                    {
+                         p1 = _,
+                         p2 = _,
+                         pool_content = _(one of default:river_water, randungeon:lava_source, the name of a nature block, or nil),
+                         frozen = _true/false,
+                         nature_metadata = nil or nature metadata
+                    },
+                    ... (other rooms with this upper y value)
+               },
+               ... (other upper y values)
+          },
+          staircases = {
+               _some_upper_y_value = {
+                    {
+                         p1 = _,
+                         p2 = _,
+                    },
+                    ... (other rooms with this upper y value)
+               },
+               ... (other upper y values)
+          }
+     },
+     ... (other dungeons with different positions)
+}

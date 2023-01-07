@@ -245,6 +245,8 @@ There are some blocks that mimic blocks already present in minetest game, but di
 
 • bookshelfs with book textures on all four sides and with no book inventory (for when dungeon walls are made from bookshelfs)
 
+• permafrost with snow (for snowy bubble caves; unobtainable due to dropping regular permafrost)
+
 None of these blocks are obtainable without commands; trying to obtain one of them the usual way simply yields the block it is mimiking.
 
 `Very Technical Blocks`:

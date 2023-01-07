@@ -63,8 +63,8 @@ end
 local function make_treasure_rooms(dungeon_pos, dungeon_maps, materials, room_styles, treasure_block)
     local i = #dungeon_maps
     local level_pos = table.copy(dungeon_pos)
-    for _, room_style in ipairs(room_styles) do
-        level_pos.y = level_pos.y - room_style.top_deph
+    for _, map_level in ipairs(dungeon_maps) do
+        level_pos.y = level_pos.y - map_level.top_deph
     end
     local width = #dungeon_maps[1]
     -- find all possible treasure rooms and their attached tiles:

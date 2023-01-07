@@ -37,6 +37,19 @@ minetest.register_node("randungeon:bookshelf", {
 	sounds = default.node_sound_wood_defaults()
 })
 
+-- permafrost with snow
+minetest.register_node("randungeon:permafrost_with_snow", {
+	description = "Permafrost with Snow",
+	tiles = {"default_snow.png", "default_permafrost.png",
+		{name = "default_permafrost.png^default_snow_side.png",
+			tileable_vertical = false}},
+	groups = {cracky = 3, snowy = 1, not_in_creative_inventory = 1},
+	drop = "default:permafrost",
+	sounds = default.node_sound_dirt_defaults({
+		footstep = {name = "default_snow_footstep", gain = 0.2},
+	}),
+})
+
 -- blocks that mark parts in dungeon rooms
 
 

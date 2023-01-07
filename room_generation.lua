@@ -248,7 +248,7 @@ local function make_room_style(materials, former_room_style)
     return best_room_style
 end
 
-local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style)
+local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style, rooms_data)
 	-- normalize pos values:
 	if not pos_a or not pos_b then
 		pos_a = {x=pos.x+1, y=pos.y, z=pos.z+1}
@@ -290,6 +290,17 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 
 	local room_corner_1 = vector.add(pos_a, {x=1, y=0, z=1})
 	local room_corner_2 = vector.add(pos_b, {x=-1, y=ceiling_height, z=-1})
+
+	-- enter into randungeon.dungeons:
+	if not rooms_data[room_corner_2.y] then
+		rooms_data[room_corner_2.y] = {}
+	end
+	local room_data = {
+		p1 = table.copy(room_corner_1),
+		p2 = table.copy(room_corner_2),
+		frozen = room_style.frozen
+	}
+	table.insert(rooms_data[room_corner_2.y], room_data)
 
 	-- extend room in some directions:
 	if (x_plus and not min_size_room and (max_size_room or math.random() < 0.5) and room_style.expand_x_plus ~= false) or room_style.expand_x_plus == true then
@@ -511,7 +522,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
         local pool_fluid
         local emergency_pool_bassin
 		if room_style.pool_liquid then
-			pool_fluid = room_style.pool_liquid -- only allowed for "default:water_source" or "randungeon:lava_source"
+			pool_fluid = room_style.pool_liquid -- only allowed for "default:river_water_source" or "randungeon:lava_source"
 		elseif room_style.is_treasure_level then
 			pool_fluid = "default:goldblock"
             emergency_pool_bassin = "default:silver_sandstone_block"
@@ -522,6 +533,8 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
             pool_fluid = "randungeon:lava_source"
             emergency_pool_bassin = "default:obsidianbrick"
         end
+		-- enter pool content in randungeon.dungeons:
+		room_data.pool_content = pool_fluid
         -- freeze if needed:
         local frozen_version = {
             ["default:river_water_source"] = "default:ice",

@@ -141,7 +141,7 @@ end
 --
 
 local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof_type, wall_type_1, wall_type_2, pillar_type, x_plus, x_minus, z_plus, z_minus,
-	                                                       bridge_type, is_dead_end, pillar_height, needs_staircase, room_style, has_room)
+	                                                       bridge_type, is_dead_end, pillar_height, needs_staircase, room_style, has_room, rooms_data)
 	local dirs = {
 		{x_plus, "x", "z", function(n) return 11 - n end, "x_plus"},
 		{x_minus, "x", "z", function(n) return n end, "x_minus"},
@@ -211,7 +211,7 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 	-- MAKE ROOM:
 	local made_room = false
 	if has_room then
-		made_room = make_room(pos, false, false, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style)
+		made_room = make_room(pos, false, false, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style, rooms_data)
 	end
 	-- CREATE NATURE AROUND TILE before yeeting leaves that grew into corridors with air:
 	make_nature_in_area({x=pos.x, y=pos.y-pillar_height+4, z=pos.z}, {x=pos.x+10, y=pos.y+4, z=pos.z+10})
@@ -366,7 +366,7 @@ local function build_dungeon_tile_pillar(pos, pillar_type, dungeon_deph)
 	end
 end
 
-local function build_dungeon_stairs(pos, stair_position, stair_orientation, dungeon_deph, floor_type, roof_type, wall_type_1, is_top_staircase)
+local function build_dungeon_stairs(pos, stair_position, stair_orientation, dungeon_deph, floor_type, roof_type, wall_type_1, is_top_staircase, staircases_data)
 	-- get positions for the staircase
 	local x_min, x_max, z_min, z_max
 	if stair_position == "x_plus" then
@@ -427,6 +427,14 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 			end
 		end
 	end
+	-- enter staircase into randungeon.dungeons
+	if not staircases_data[pos.y+dungeon_deph+2] then
+		staircases_data[pos.y+dungeon_deph+2] = {}
+	end
+	table.insert(staircases_data[pos.y+dungeon_deph+2], {
+		p1 = {x=pos.x+x_min, y=pos.y+1, z=pos.z+z_min},
+		p2 = {x=pos.x+x_max, y=pos.y+dungeon_deph+2, z=pos.z+z_max}
+	})
 	-- make bottom platform
 	for x = pos.x+x_min, pos.x+x_max do
 		for z = pos.z+z_min, pos.z+z_max do
@@ -607,7 +615,7 @@ local function remove_forceload(positions_to_load)
 	end
 end
 
-local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_percentage, top_staircase_height)
+local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_percentage, top_staircase_height, bubble_cave_data)
 	local surface_per_slice = (width * 10) * (width * 10) -- surface of every horizontal slice of dungeon
 	--[[
     volume dungeon area per horizontal slice = (width * 10) * (width * 10)
@@ -664,23 +672,6 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 		elseif round == 2 and (needed_new_air_blocks <= 0 or fruitless_attempts > 10000) then
 			break
 		end
-		-- choose what to fill bubbles with
-		local material
-		local rand_num = math.random()
-		if rand_num < 0.25 then
-			material = "default:lava_source"
-		elseif rand_num < 0.6 then
-			material = "default:water_source"
-		else
-			material = "air"
-		end
-		-- decide how high the liquid should go, if it is one
-		local pegel = false
-		if material ~= "air" then
-			if math.random() < 0.7 then
-				pegel = math.random()
-			end
-		end
 		-- decide on radius and position
 		local max_bubble_radius = math.min(radius_max, math.ceil(needed_new_air_blocks * 3/2 / math.pi))
 		local bubble_radius = math.random(radius_min, max_bubble_radius)
@@ -689,19 +680,51 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			y = math.random(pos.y, pos.y-height_in_blocks),
 			z = math.random(pos.z, pos.z+10*width)
 		}
-		-- decide if we'll add nature to the bubble
-		local nature = false
-		local nature_metadata = {}
-		if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
-			if math.random() < 0.5 then
-				nature = "randungeon:pretty_forest"
-			else
-				nature = "randungeon:swampy_forest"
-			end
-			nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature)
-		end
-		-- build it if it doesn't intersect with pre-existing caves
+		-- greenlight it if it doesn't intersect with pre-existing caves
 		if not minetest.find_node_near(bubble_pos, bubble_radius+1, {"air", "group:liquid"}) then
+			-- choose what to fill bubbles with
+			local material
+			local rand_num = math.random()
+			if rand_num < 0.25 then
+				material = "default:lava_source"
+			elseif rand_num < 0.6 then
+				material = "default:water_source"
+			else
+				material = "air"
+			end
+			-- decide how high the liquid should go, if it is one
+			local pegel = false
+			if material ~= "air" then
+				if math.random() < 0.7 then
+					pegel = math.random()
+				end
+			end
+			-- decide if we'll add nature to the bubble
+			local nature = false
+			local nature_metadata = {}
+			if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
+				if math.random() < 0.5 then
+					nature = "randungeon:pretty_forest"
+				else
+					nature = "randungeon:swampy_forest"
+				end
+				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature)
+			end
+			-- fill randungeon.dungeons data structure with info on our cave
+			local highest_y_value = bubble_pos.y + bubble_radius
+			if not bubble_cave_data[highest_y_value] then
+				bubble_cave_data[highest_y_value] = {}
+			end
+			table.insert(bubble_cave_data[highest_y_value], {
+				center_pos = bubble_pos,
+				radius = bubble_radius,
+				type = material,
+				frozen = nil,
+				nature = nature,
+				fill_height = pegel,
+				nature_metadata = nature_metadata.fields
+			})
+			-- build bubble cave
 			fruitless_attempts = 0
 			local nature_blocks_to_grow_directly = {}
 			for x = -bubble_radius, bubble_radius do
@@ -742,13 +765,19 @@ end
 
 local function make_dungeon_tile(pos, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus,
 	                             dungeon_deph, staircase_height, pillar_height, stair_position, stair_orientation, bridge_type, is_dead_end, room_style, has_pillar,
-						         has_room, is_top_level)
+						         has_room, is_top_level, this_dungeon)
 
 	if is_top_level == nil then
 		is_top_level = false
 	end
 	if is_dead_end then
 		is_dead_end = stair_position
+	end
+	if this_dungeon == nil then
+		this_dungeon = {
+			rooms = {},
+			staircases = {}
+		}
 	end
 	if not room_style then
 		room_style = make_unconnected_room_style({wall_type_1=wall_type_1, wall_type_2=wall_type_2})
@@ -757,14 +786,14 @@ local function make_dungeon_tile(pos, floor_type, wall_type_1, wall_type_2, roof
 		build_dungeon_tile_pillar(pos, pillar_type, pillar_height)
 	end
 	build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof_type, wall_type_1, wall_type_2, pillar_type, x_plus, x_minus, z_plus, z_minus, bridge_type,
-	                                            is_dead_end, pillar_height, stair_position, room_style, has_room)
+	                                            is_dead_end, pillar_height, stair_position, room_style, has_room, this_dungeon.rooms)
 	if stair_position then
-		build_dungeon_stairs(pos, stair_position, stair_orientation, staircase_height, floor_type, roof_type, wall_type_1, is_top_level)
+		build_dungeon_stairs(pos, stair_position, stair_orientation, staircase_height, floor_type, roof_type, wall_type_1, is_top_level, this_dungeon.staircases)
 	end
 end
 
 local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, dungeon_deph, staircase_height, pillar_height, rim_sealed,
-	                        called_by_dungeon_maker_function, bridge_type, room_style, map, is_top_level)
+	                        called_by_dungeon_maker_function, bridge_type, room_style, map, is_top_level, this_dungeon)
 
 	if is_top_level == nil then
 		is_top_level = false
@@ -805,7 +834,7 @@ local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type
 							  tile_specific_materials.bridge_type or bridge_type,
 							  tile.is_dead_end,
 							  tile_specific_room_style or room_style,
-							  tile.has_pillar, tile.has_room, is_top_level)
+							  tile.has_pillar, tile.has_room, is_top_level, this_dungeon)
 		end
 	end
 	-- replace dungeon air with normal air
@@ -865,11 +894,21 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	table.insert(randungeon_finished_dungeons, dungeon_id)
 	print("Build area for dungeon with dungeon_id " .. tostring(dungeon_id) .. " generated.")
 
-	-- make air bubbles
+	-- make dungeon data structure
+	local dungeon_name = minetest.pos_to_string(pos)
+	randungeon.dungeons[dungeon_name] = {
+		pos = table.copy(pos),
+		bubble_caves = {},
+		rooms = {},
+		staircases = {}
+	}
+	local this_dungeon = randungeon.dungeons[dungeon_name]
+
+	-- make bubbly caves
 	if not cave_percentage then
 		cave_percentage = 30
 	end
-	add_artificial_caves(pos, width, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph, cave_percentage/100, dungeon_top_deph)
+	add_artificial_caves(pos, width, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph, cave_percentage/100, dungeon_top_deph, this_dungeon.bubble_caves)
 
 	-- make materials...
 	local materials = {}
@@ -901,12 +940,12 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		table.insert(dungeon_maps, generate_dungeon_map(width, rim_sealed, dungeon_maps[i-1]))
 	end
 	for i = 1, #dungeon_maps do
-		room_styles[i].top_deph = dungeon_deph
-		room_styles[i].bottom_deph = dungeon_deph
+		dungeon_maps[i].top_deph = dungeon_deph
+		dungeon_maps[i].bottom_deph = dungeon_deph
 		if i == 1 then
-			room_styles[i].top_deph = dungeon_top_deph
-		elseif i == #room_styles then
-			room_styles[i].bottom_deph = dungeon_bottom_deph
+			dungeon_maps[i].top_deph = dungeon_top_deph
+		elseif i == #dungeon_maps then
+			dungeon_maps[i].bottom_deph = dungeon_bottom_deph
 		end
 	end
 
@@ -926,7 +965,7 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	-- actually build dungeon:
 	local level_pos = table.copy(pos)
 	for i = 1, dungeon_levels do
-		level_pos.y = level_pos.y - room_styles[i].top_deph
+		level_pos.y = level_pos.y - dungeon_maps[i].top_deph
 		-- unpack materials & room style
 		floor_type = materials[i].floor_type
 		wall_type_1 = materials[i].wall_type_1
@@ -936,16 +975,11 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		bridge_type = materials[i].bridge_type
 		local room_style = room_styles[i]
 		-- determine pillar and staircase height
-		local pillar_height = dungeon_deph
-		local staircase_height = dungeon_deph
-		if i == 1 then
-			staircase_height = dungeon_top_deph
-		elseif i == dungeon_levels then
-			pillar_height = dungeon_bottom_deph
-		end
+		local pillar_height = dungeon_maps[i].bottom_deph
+		local staircase_height = dungeon_maps[i].top_deph
 		-- make dungeon level
 		make_dungeon_level(level_pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, dungeon_deph, staircase_height, pillar_height,
-		                   rim_sealed, true, bridge_type, room_style, dungeon_maps[i], i==1)
+		                   rim_sealed, true, bridge_type, room_style, dungeon_maps[i], i==1, this_dungeon)
 	end
 	-- replace dungeon air with normal air
 	for x = 1, width * 10 do
@@ -973,6 +1007,11 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 
 	-- unforceload area
 	remove_forceload(forceloaded_area)
+	-- print dungeon data
+	print(dump(randungeon.dungeons))
+	print(tostring(#randungeon.dungeons))
+	local randungeon_dungeons_string = minetest.serialize(randungeon.dungeons)
+	randungeon.storage:set_string("dungeons", randungeon_dungeons_string)
 	-- inform about generated dungeon
 	print("dungeon with id " .. tostring(dungeon_id) .. " generated in " ..
 	      tostring(minetest.get_us_time() / 10000000 - dungeon_generation_started[dungeon_id]) .. " seconds.")

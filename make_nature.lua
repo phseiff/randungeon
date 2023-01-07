@@ -48,30 +48,6 @@ local function make_glowstick(pos)
 end
 
 --
--- define types of pool
---
-
-local function pool_with_gold(pos)
-    minetest.set_node(pos, {name="default:goldblock"})
-end
-
-local function pool_with_water(pos)
-    minetest.set_node(pos, {name="default:river_water_source"})
-end
-
-local function pool_dried_out(pos)
-    minetest.set_node(pos, {name="air"})
-end
-
-local function pool_with_lava(pos)
-    minetest.set_node(pos, {name="default:lava_source"})
-end
-
-local function pool_with_lava_dried_out(pos)
-    minetest.set_node(pos, {name="default:obsidian"})
-end
-
---
 -- define types of nature
 --
 
