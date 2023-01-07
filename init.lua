@@ -15,6 +15,17 @@ randungeon.dungeon_prebuild_modifications = {}
 -- This dict exists to allow other mods to add functions that modify how dungeons are build.
 randungeon.dungeon_postbuild_modifications = {}
 
+-- gives mods the ability to add blocks and their frozen variants, e.g. via ["mymod:graveyard_dirt"]="mymod:graveyard_dirt_with_snow",
+-- for frozen levels/poolrooms.
+randungeon.frozen_variants = {}
+
+-- gives mods the ability to add blocks to the list of blocks that should get snow on them on frzen levels/ in pool rooms.
+randungeon.snow_carrying_blocks = {}
+
+-- defines types of nature (basically minobiomes) that can fill bubble caves as well as pool rooms; mostly defined by make_nature.lua
+-- but can be extended by mods.
+randungeon.nature_types = {}
+
 -- table that stores all dungeons that got generated in the world, with their rooms/ bubbly caves/ staircases for use by e.g. mob mods
 randungeon.storage = minetest.get_mod_storage()
 local randungeon_dungeons_string = randungeon.storage:get_string("dungeons")
