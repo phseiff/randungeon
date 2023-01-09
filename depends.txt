@@ -3,5 +3,5 @@ default
 doors
 flowers
 markdown2formspec
-buckets?
+bucket?
 stairs?
