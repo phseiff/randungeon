@@ -48,6 +48,7 @@ local function freeze_area(p1, p2, frozen_corridors)
                 if frozen_corridors then
                     local node_data = minetest.registered_nodes[nname]
                     if node_data.walkable ~= false and (node_data.drawtype == nil or node_data.drawtype == "normal")
+                       and minetest.get_item_group(nname, "wood") == 0
                        and (nname_above == "air" or nname_above == "randungeon:air_glowing")
                        and math.random() < 1/3 then
                         new_node_above = "default:snow"
