@@ -47,6 +47,8 @@ local function make_glowstick(pos)
     minetest.set_node(pos, {name=mese_lamp_type})
 end
 
+local TESTING_CAVES = false
+
 --
 -- define types of nature
 --
@@ -106,8 +108,6 @@ local function make_metadata_for_pretty_forest()
         mushrooms=tostring(mushrooms)
     }}
 end
-
-local TESTING_CAVES = false
 
 local function make_pretty_forest(pos)
 
@@ -172,14 +172,7 @@ local function make_pretty_forest(pos)
 end
 
 minetest.register_node("randungeon:pretty_forest", {
-    groups = {not_in_creative_inventory = 1, make_nature_block = 1},
-    -- make it so manually placing the node also works
-    after_place_node = function(pos, placer, itemstack, pointed_thing)
-        if minetest.get_node(pos).name == "randungeon:pretty_forest" then
-            minetest.get_meta(pos):from_table({fields={water_lilies="true", mese_lamps="false", mese_lamps_if_mese_lamps="true", can_have_apples="true"}})
-            make_pretty_forest(pos)
-        end
-    end
+    groups = {not_in_creative_inventory = 1, make_nature_block = 1}
 })
 
 -- SWAMPY FOREST
@@ -364,27 +357,64 @@ local function make_swampy_forest(pos)
 end
 
 minetest.register_node("randungeon:swampy_forest", {
-    groups = {not_in_creative_inventory = 1, make_nature_block = 1},
-    -- make it so manually placing the node also works
-    after_place_node = function(pos, placer, itemstack, pointed_thing)
-        if minetest.get_node(pos).name == "randungeon:swampy_forest" then
-            minetest.get_meta(pos):from_table({fields={water_lilies="true", mese_lamps="false", mese_lamps_if_mese_lamps="true"}})
-            make_swampy_forest(pos)
-        end
-    end
+    groups = {not_in_creative_inventory = 1, make_nature_block = 1}
 })
 
 
 -- GENERAL FUNCTIONS
 
-local function make_nature(pos)
-    if minetest.get_node(pos).name == "randungeon:pretty_forest" then 
-        make_pretty_forest(pos)
-    elseif minetest.get_node(pos).name == "randungeon:swampy_forest" then
-        make_swampy_forest(pos)
-    else
-        print("oh noes !! pos: " .. minetest.pos_to_string(pos))
+randungeon.nature_types = {
+    ["randungeon:pretty_forest"] = {
+        caves_weight = 0.5,
+        pools_weight = 0.5,
+        pool_deph = 1,
+        pool_bassin = nil,
+        make_metadata = make_metadata_for_pretty_forest,
+        make_nature = make_pretty_forest,
+    },
+    ["randungeon:swampy_forest"] = {
+        caves_weight = 0.5,
+        pools_weight = 0.5,
+        pool_deph = 3,
+        pool_bassin = nil,
+        make_metadata = make_metadata_for_swampy_forest,
+        make_nature = make_swampy_forest
+    }
+}
+
+local function get_random_cave_nature_type()
+    local total_weight = 0
+    for _, data in pairs(randungeon.nature_types) do
+        total_weight = total_weight + data.caves_weight
     end
+    local chosen_weight = math.random() * total_weight
+    local weight_so_far = 0
+    for name, data in pairs(randungeon.nature_types) do
+        weight_so_far = weight_so_far + data.caves_weight
+        if weight_so_far >= chosen_weight then
+            return name
+        end
+    end
+end
+
+local function get_random_pool_nature_type()
+    local total_weight = 0
+    for _, data in pairs(randungeon.nature_types) do
+        total_weight = total_weight + data.pools_weight
+    end
+    local chosen_weight = math.random() * total_weight
+    local weight_so_far = 0
+    for name, data in pairs(randungeon.nature_types) do
+        weight_so_far = weight_so_far + data.pools_weight
+        if weight_so_far >= chosen_weight then
+            return name
+        end
+    end
+end
+
+local function make_nature(pos)
+    local nature_type = minetest.get_node(pos).name
+    randungeon.nature_types[nature_type].make_nature(pos)
 end
 
 local function make_nature_in_area(area_border1, area_border2)
@@ -395,19 +425,14 @@ local function make_nature_in_area(area_border1, area_border2)
     end
 end
 
-local function make_metadata_for_nature(pos, nature_block)
-    if nature_block == "randungeon:pretty_forest" then 
-        return make_metadata_for_pretty_forest()
-    elseif nature_block == "randungeon:swampy_forest" then
-        return make_metadata_for_swampy_forest()
-    else
-        print("oh noes!! pos: " .. minetest.pos_to_string(pos))
-    end
+local function make_metadata_for_nature(pos, nature_type)
+    return randungeon.nature_types[nature_type].make_metadata(pos)
 end
 
 return {
     make_metadata_for_nature = make_metadata_for_nature,
     make_nature = make_nature,
-    make_nature_in_area = make_nature_in_area
+    make_nature_in_area = make_nature_in_area,
+    get_random_cave_nature_type = get_random_cave_nature_type,
+    get_random_pool_nature_type = get_random_pool_nature_type,
 }
-

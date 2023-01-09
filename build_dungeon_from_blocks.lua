@@ -39,6 +39,7 @@ local cave_nature_generator_functions = dofile(mod_path.."/make_nature.lua")
 local make_metadata_for_nature = cave_nature_generator_functions.make_metadata_for_nature
 local make_nature = cave_nature_generator_functions.make_nature
 local make_nature_in_area = cave_nature_generator_functions.make_nature_in_area
+local get_random_cave_nature_type = cave_nature_generator_functions.get_random_cave_nature_type
 
 -- Treasure Rooms Generators
 local treasure_level_funcions = dofile(mod_path.."/treasure_level.lua")
@@ -703,11 +704,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			local nature = false
 			local nature_metadata = {}
 			if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
-				if math.random() < 0.5 then
-					nature = "randungeon:pretty_forest"
-				else
-					nature = "randungeon:swampy_forest"
-				end
+				nature = get_random_cave_nature_type()
 				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature)
 			end
 			-- fill randungeon.dungeons data structure with info on our cave

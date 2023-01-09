@@ -10,6 +10,17 @@ local get_solid_air_block_replacement = helper_functions.get_solid_air_block_rep
 local door_generation_code = dofile(mod_path.."/doors.lua")
 local place_doubledoor_based_on_materials = door_generation_code.place_doubledoor_based_on_materials
 
+-- Cave Nature Generator Functions
+local cave_nature_generator_functions = dofile(mod_path.."/make_nature.lua")
+local make_metadata_for_nature = cave_nature_generator_functions.make_metadata_for_nature
+local make_nature = cave_nature_generator_functions.make_nature
+local make_nature_in_area = cave_nature_generator_functions.make_nature_in_area
+local get_random_pool_nature_type = cave_nature_generator_functions.get_random_cave_nature_type
+
+-- Code to make frozen levels especially frozen
+local frozen_levels_functions = dofile(mod_path.."/frozen_levels.lua")
+local freeze_area = frozen_levels_functions.freeze_area
+
 --
 -- Helper Function
 --
@@ -94,7 +105,7 @@ local function make_unconnected_room_style(materials)
     end
     -- make frozen
     local frozen = false
-    if math.random() < 1/3 then
+    if math.random() < 1/5.5 then
         frozen = true
     end
 
@@ -519,30 +530,35 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	-- print("room style: " .. minetest.serialize(room_style))
     if (math.random() < pool_chance and (edge_pillars or pillar_room or not can_have_pillars) and room_style.pool ~= false) or room_style.pool == true then
         -- decide on what to fill pool with:
-        local pool_fluid
+        local pool_content
         local emergency_pool_bassin
+		local pool_content_metadata
 		if room_style.pool_liquid then
-			pool_fluid = room_style.pool_liquid -- only allowed for "default:river_water_source" or "randungeon:lava_source"
+			pool_content = room_style.pool_liquid -- only allowed for "default:river_water_source" or "randungeon:lava_source"
 		elseif room_style.is_treasure_level then
-			pool_fluid = "default:goldblock"
+			pool_content = "default:goldblock"
             emergency_pool_bassin = "default:silver_sandstone_block"
+		elseif math.random() <= 1/30 then
+			pool_content = get_random_pool_nature_type()
+            emergency_pool_bassin = randungeon.nature_types[pool_content].pool_bassin or "default:silver_sandstone_block"
+			pool_content_metadata = make_metadata_for_nature(room_corner_1, pool_content)
         elseif math.random() < 2/3 then
-            pool_fluid = "default:river_water_source"
+            pool_content = "default:river_water_source"
             emergency_pool_bassin = "default:silver_sandstone_block"
         else
-            pool_fluid = "randungeon:lava_source"
+            pool_content = "randungeon:lava_source"
             emergency_pool_bassin = "default:obsidianbrick"
         end
 		-- enter pool content in randungeon.dungeons:
-		room_data.pool_content = pool_fluid
+		room_data.pool_content = pool_content
         -- freeze if needed:
         local frozen_version = {
             ["default:river_water_source"] = "default:ice",
             ["randungeon:lava_source"] = "default:obsidian"
         }
-        local actual_pool_fluid = pool_fluid
+        local actual_pool_content = pool_content
         if frozen then
-            actual_pool_fluid = frozen_version[pool_fluid]
+            actual_pool_content = frozen_version[pool_content] or pool_content
         end
         -- find a good water resistent node as replacement for floor if floor isn't water resistant:
         local pool_bassin
@@ -559,17 +575,21 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
         end
         -- decide if we want to place waterlillies:
         local water_lilies = false
-        if ((actual_pool_fluid == "default:river_water_source" and math.random() < 2/3 or actual_pool_fluid == "default:ice" and math.random() < 1/5)
+        if ((actual_pool_content == "default:river_water_source" and math.random() < 2/3 or actual_pool_content == "default:ice" and math.random() < 1/5)
 		    and room_style.water_lilies ~= false) or room_style.water_lilies == true then
             water_lilies = true
         end
         -- decide if we want the ice to stand for itself, with no snow on it:
         local no_snow_on_frozen_pool = false
-        if actual_pool_fluid == "default:ice" and ((room_corner_2.x+2)-(room_corner_1.x-2)+1) * ((room_corner_2.z+2)-(room_corner_2.z-2)+1) > 20 then
+        if actual_pool_content == "default:ice" and ((room_corner_2.x+2)-(room_corner_1.x-2)+1) * ((room_corner_2.z+2)-(room_corner_2.z-2)+1) > 20 then
             if math.random() < 1/2 then
                 no_snow_on_frozen_pool = true -- if bigger than a 4x5 bassin we want to keep the surface slippery sometimes
             end
         end
+		-- set no snow on pool if it is filled with nature, since we freeze those manually:
+		if minetest.get_item_group(pool_content, "make_nature_block") >= 1 then
+			no_snow_on_frozen_pool = true
+		end
         -- actually build the pool:
         for x = room_corner_1.x+1, room_corner_2.x-1 do
             for z = room_corner_1.z+1, room_corner_2.z-1 do
@@ -578,9 +598,9 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
                 if minetest.get_meta(pos_above):get_string("dont_replace_with_air") ~= "true" then
                     -- care for bassin itself:
                     if x >= room_corner_1.x+2 and x <= room_corner_2.x-2 and z >= room_corner_1.z+2 and z <= room_corner_2.z-2 then
-                        minetest.set_node(new_pos, {name=actual_pool_fluid})
+                        minetest.set_node(new_pos, {name=actual_pool_content})
 						-- if stairs mod is present and we want to make a gold pool, switch between different gold blocks:
-						if actual_pool_fluid == "default:goldblock" and minetest.get_modpath("stairs") then
+						if actual_pool_content == "default:goldblock" and minetest.get_modpath("stairs") then
 							local rand = math.random()
 							local param2 = math.random(0, 3)
 							if rand < 1/3 then
@@ -590,6 +610,17 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 							else
 								minetest.set_node(new_pos, {name="stairs:stair_outer_goldblock", param2=param2})
 							end
+						end
+						-- give nature blocks their metadata:
+						if minetest.get_item_group(actual_pool_content, "make_nature_block") >= 1 then
+							local p
+							for y = 1, randungeon.nature_types[actual_pool_content].pool_deph do
+								p = table.copy(new_pos)
+								p.y = new_pos.y + 1 - y
+								minetest.set_node(p, {name="air"})
+							end
+							minetest.set_node(p, {name=actual_pool_content})
+							minetest.get_meta(p):from_table(pool_content_metadata)
 						end
                         -- set water lillies:
                         if water_lilies and math.random() < 1/4 then -- around 3 water lillies for smallest room variant with corner pillars
@@ -614,7 +645,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
             {x=room_corner_1.x+1, y=room_corner_1.y-1, z=room_corner_1.z+1}, {x=room_corner_2.x-1, y=room_corner_1.y, z=room_corner_2.z-1}, {floor_type}
         )
         for _, pool_bassin_node_pos in ipairs(pool_bassin_nodes) do
-            if minetest.find_node_near(pool_bassin_node_pos, 1, {actual_pool_fluid}) then
+            if minetest.find_node_near(pool_bassin_node_pos, 1, {actual_pool_content}) then
                 minetest.set_node(pool_bassin_node_pos, {name=pool_bassin})
             end
         end
@@ -625,6 +656,22 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 					minetest.get_meta({x=x, y=y, z=z}):set_string("must_be_fireproof", "true")
 					minetest.get_meta({x=x, y=y, z=z}):set_string("fireproof_alternative", pool_bassin)
 				end
+			end
+		end
+		-- evolve nature if pool is filled with nature:
+		if minetest.get_item_group(actual_pool_content, "make_nature_block") >= 1 then
+			for x = room_corner_1.x, room_corner_2.x do
+				for y = room_corner_1.y-1, room_corner_2.y do
+					for z = room_corner_1.z, room_corner_2.z do
+						if minetest.get_node({x=x, y=y, z=z}).name == "randungeon:dungeon_air" then
+							minetest.set_node({x=x, y=y, z=z}, {name="air"})
+						end
+					end
+				end
+			end
+			make_nature_in_area(room_corner_1, room_corner_2)
+			if frozen then
+				freeze_area(room_corner_1, room_corner_2, false)
 			end
 		end
     end
