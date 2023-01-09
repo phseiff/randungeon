@@ -1,5 +1,5 @@
 Randungeon - a dungeon generator mod for minetest
-Copyright (C) 2022  Phii Amelia Emma (phseiff)
+Copyright (C) 2022, 2023  Phii Amelia Emma (phseiff)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
