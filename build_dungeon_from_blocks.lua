@@ -1005,8 +1005,6 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	-- unforceload area
 	remove_forceload(forceloaded_area)
 	-- print dungeon data
-	print(dump(randungeon.dungeons))
-	print(tostring(#randungeon.dungeons))
 	local randungeon_dungeons_string = minetest.serialize(randungeon.dungeons)
 	randungeon.storage:set_string("dungeons", randungeon_dungeons_string)
 	-- inform about generated dungeon
