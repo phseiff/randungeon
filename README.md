@@ -82,7 +82,7 @@ The staircase of the upmost dungeon doesn't just need to reach the upper level (
 
 `max % of blocks taken up by bubble caves`:
 
-Before the dungeon is generated, artificial bubble-shaped caves of varying size and interior (water, lava, nothing, lakes, nature etc.) are generated in the dungeon generation area. The value of `max % of blocks taken up by bubble caves` determines the maximum percentage of blocks in the generation area that may be made up by air blocks after bubble caves are generated (this includes space taken up by normal mapgen-generated caves). Must be an int between 0 and 100 and defaults to 30.
+Before the dungeon is generated, artificial bubble-shaped caves of varying size and interior (water, lava, nothing, lakes, nature etc.) are generated in the dungeon generation area. The value of `max % of blocks taken up by bubble caves` determines the maximum percentage of previously-not-air (and not liquid) blocks in the generation area that may be replaced with bubble caves after generation is finished. Must be an int between 0 and 100 and defaults to 30.
 
 `light up corridors & caves`:
 
@@ -246,6 +246,8 @@ There are some blocks that mimic blocks already present in minetest game, but di
 • bookshelfs with book textures on all four sides and with no book inventory (for when dungeon walls are made from bookshelfs)
 
 • permafrost with snow (for snowy bubble caves; unobtainable due to dropping regular permafrost)
+
+• cobble that can't get mossy
 
 None of these blocks are obtainable without commands; trying to obtain one of them the usual way simply yields the block it is mimiking.
 

@@ -50,6 +50,16 @@ minetest.register_node("randungeon:permafrost_with_snow", {
 	}),
 })
 
+-- cobble stone that doesn't get turned into mossy cobble
+minetest.register_node("randungeon:unmossy_cobble", {
+	description = "Moss-Resistant Cobblestone",
+	tiles = {"default_cobble.png"},
+	is_ground_content = false,
+	groups = {cracky = 3, stone = 2, not_in_creative_inventory = 1},
+	drop = "default:cobble",
+	sounds = default.node_sound_stone_defaults(),
+})
+
 -- blocks that mark parts in dungeon rooms
 
 

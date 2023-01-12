@@ -24,6 +24,7 @@ randungeon.snow_carrying_blocks = {}
 
 -- defines types of nature (basically minobiomes) that can fill bubble caves as well as pool rooms; mostly defined by make_nature.lua
 -- but can be extended by mods.
+-- This table is overwritten by make_nature.lua !!!
 randungeon.nature_types = {}
 
 -- table that stores all dungeons that got generated in the world, with their rooms/ bubbly caves/ staircases for use by e.g. mob mods
@@ -59,6 +60,9 @@ local dungeon_building_functions = dofile(mod_path.."/build_dungeon_from_blocks.
 local make_dungeon_tile = dungeon_building_functions.make_dungeon_tile
 local make_dungeon_level = dungeon_building_functions.make_dungeon_level
 local make_dungeon = dungeon_building_functions.make_dungeon
+
+-- Entity Spawning Functions
+dofile(mod_path.."/entity_spawning.lua")
 
 -- Natural Dungeon Generation
 dofile(mod_path.."/natural_generation.lua")

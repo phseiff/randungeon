@@ -56,6 +56,14 @@ local freeze_frozen_levels = frozen_levels_functions.freeze_frozen_levels
 
 local function set_structure_block(pos, name, only_replace_solid_blocks, dont_replace_pool_blocks)
 	local old_node_name = minetest.get_node(pos).name
+	-- turn cobble around water into mossy cobble
+	if name == "default:cobble" and minetest.find_node_near(pos, 1, {"group:water"}) then
+		if math.random() < 0.5 then
+			name = "default:mossycobble"
+		else
+			name = "randungeon:unmossy_cobble"
+		end
+	end
 	-- don't replace nodes that were marked as irreplacable by air (like snow, water lillys, etc) (important bc of staircase walls)
 	if minetest.get_meta(pos):get_string("dont_replace_with_air") == "true"  then
 		return
@@ -638,6 +646,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 
 	-- determine how much is already filled by caves
 	local total_air_blocks = 0
+
 	for i = 0, math.ceil(height_in_blocks / 10) do
 		local area_border1 = {x=pos.x, y=pos.y-i*10, z=pos.z}
 		local area_border2 = {x=pos.x+10*width, y=pos.y-i*10, z=pos.z+10*width}
@@ -648,8 +657,8 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 	local total_air_blocks_per_slice = total_air_blocks / number_of_tested_slices
 	local total_air_blocks = total_air_blocks_per_slice * height_in_blocks
 	local total_blocks = (10*width) * (10*width) * height_in_blocks
-	local wanted_total_air_blocks = total_blocks * wanted_cave_percentage
-	local needed_new_air_blocks = wanted_total_air_blocks - total_air_blocks
+	local total_not_air_blocks = total_blocks - total_air_blocks
+	local needed_new_air_blocks = wanted_cave_percentage * total_not_air_blocks
 
 	-- print("total blocks: " .. tostring(total_blocks))
 	-- print("air blocks: " .. tostring(total_air_blocks))
@@ -893,8 +902,13 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 
 	-- make dungeon data structure
 	local dungeon_name = minetest.pos_to_string(pos)
+	local p1 = {x=pos.x-60, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-17, z=pos.z-60}
+	local p2 = {x=pos.x+10*width+60, y=pos.y, z=pos.z+10*width+60}
 	randungeon.dungeons[dungeon_name] = {
 		pos = table.copy(pos),
+		p1 = p1,
+		p2 = p2,
+		lowest_explored_y = p2.y,
 		bubble_caves = {},
 		rooms = {},
 		staircases = {}
@@ -1004,7 +1018,36 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 
 	-- unforceload area
 	remove_forceload(forceloaded_area)
-	-- print dungeon data
+
+	-- add level information to every room and bubble cave
+    local y_max = pos.y
+    for i = 1, #dungeon_maps do
+        local y_min
+        if i == 1 then
+            y_min = y_max - dungeon_maps[i].top_deph - math.ceil(dungeon_maps[i].bottom_deph / 2)
+        elseif i == #dungeon_maps then
+            y_min = y_max - math.floor(dungeon_maps[i].top_deph / 2) - dungeon_maps[i].bottom_deph
+        else
+            y_min = y_max - math.floor(dungeon_maps[i].top_deph / 2) - math.ceil(dungeon_maps[i].bottom_deph / 2)
+        end
+		for _, rooms in pairs(this_dungeon.rooms) do
+			for _, room in ipairs(rooms) do
+				if room.p1.y >= y_min and room.p1.y < y_max then
+					room.level = i
+				end
+			end
+		end
+		for _, caves in pairs(this_dungeon.bubble_caves) do
+			for _, cave in ipairs(caves) do
+				local y = cave.center_pos.y - cave.radius
+				if y >= y_min and y < y_max then
+					cave.level = i
+				end
+			end
+		end
+        y_max = y_min
+    end
+	-- save dungeon data
 	local randungeon_dungeons_string = minetest.serialize(randungeon.dungeons)
 	randungeon.storage:set_string("dungeons", randungeon_dungeons_string)
 	-- inform about generated dungeon

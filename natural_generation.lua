@@ -75,7 +75,7 @@ if generation_enabled then
                         100, 250, -- bottom deph and top deph
                         true, -- random materials
                         30, -- cave_percentage
-                        false, -- light_up_corridors , treasure_block, dungeon_id
+                        false, -- light_up_corridors
                         true, -- gold_pools
                         "randungeon:dungeon_treasure", -- treasure block
                         nil -- dungeon id

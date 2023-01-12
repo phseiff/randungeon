@@ -4,16 +4,19 @@
 randungeon.dungeons = {
      _position_string = {
           pos = {x=x, y=y, z=z},
+          p1 = _(lower edge of the dungeon entity spawn area),
+          p2 = _(upper edge of the randungen entity spawn area),
+          lowest_explored_y = _(lowest y value any player has ever been to in the dungeon area),
           bubble_caves = {
                _some_upper_y_value = {
                     {
                          center_pos = _,
                          radius = _,
                          type = _(one of default:lava_source, default:water_source, and air),
-                         frozen = _true/false
                          nature = _(false or name of the nature block),
-                         fill_height = false if n/a or a percentage if filled to a certain point with lava or water
-                         nature_metadata = nil or nature metadata
+                         fill_height = false if n/a or a percentage if filled to a certain point with lava or water,
+                         nature_metadata = nil or nature metadata,
+                         level = _dungeon_level
                     },
                     ... (other caves with this upper y value)
                },
@@ -26,7 +29,8 @@ randungeon.dungeons = {
                          p2 = _,
                          pool_content = _(one of default:river_water, randungeon:lava_source, the name of a nature block, or nil),
                          frozen = _true/false,
-                         nature_metadata = nil or nature metadata
+                         nature_metadata = nil or nature metadata,
+                         level = _dungeon_level
                     },
                     ... (other rooms with this upper y value)
                },

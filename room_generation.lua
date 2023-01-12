@@ -26,6 +26,14 @@ local freeze_area = frozen_levels_functions.freeze_area
 --
 
 local function set_structure_block(pos, name, only_lace_solid_blocks)
+	-- turn cobble around water into mossy cobble
+	if name == "default:cobble" and minetest.find_node_near(pos, 1, {"group:water"}) then
+		if math.random() < 0.5 then
+			name = "default:mossycobble"
+		else
+			name = "randungeon:unmossy_cobble"
+		end
+	end
     -- reduced & modified version of set_structure_block from build_dungeon_from_blocks.lua
 	local old_node_name = minetest.get_node(pos).name
 	-- air nodes don't get placed, unless in water, in which case they get turned into glass, or lava, in which case they get turned into dungeon air
@@ -302,17 +310,6 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	local room_corner_1 = vector.add(pos_a, {x=1, y=0, z=1})
 	local room_corner_2 = vector.add(pos_b, {x=-1, y=ceiling_height, z=-1})
 
-	-- enter into randungeon.dungeons:
-	if not rooms_data[room_corner_2.y] then
-		rooms_data[room_corner_2.y] = {}
-	end
-	local room_data = {
-		p1 = table.copy(room_corner_1),
-		p2 = table.copy(room_corner_2),
-		frozen = room_style.frozen
-	}
-	table.insert(rooms_data[room_corner_2.y], room_data)
-
 	-- extend room in some directions:
 	if (x_plus and not min_size_room and (max_size_room or math.random() < 0.5) and room_style.expand_x_plus ~= false) or room_style.expand_x_plus == true then
 		room_corner_2.x = room_corner_2.x + 1
@@ -326,6 +323,17 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	if (z_minus and not min_size_room and (max_size_room or math.random() < 0.5) and room_style.expand_z_minus ~= false) or room_style.expand_z_minus == true then
 		room_corner_1.z = room_corner_1.z - 1
 	end
+
+	-- enter into randungeon.dungeons:
+	if not rooms_data[room_corner_2.y] then
+		rooms_data[room_corner_2.y] = {}
+	end
+	local room_data = {
+		p1 = table.copy(room_corner_1),
+		p2 = table.copy(room_corner_2),
+		frozen = room_style.frozen
+	}
+	table.insert(rooms_data[room_corner_2.y], room_data)
 
 	-- build room:
 	for x = room_corner_1.x, room_corner_2.x do

@@ -1,0 +1,44 @@
+
+randungeon.entity_levels = {
+    _entity_name = _level_number,
+
+    ...(further entities & itemstrings),
+}
+
+randungeon.entity_spawnblocks = {
+    _entity_name = _(list of bloks that the entity can spawn in, e.g. "air", "randungeon:lava_source", "default:river_water_source", "group:flower")
+    -- doesn't need to be specified for itemstrings
+
+    ...(further entities),
+}
+
+randungeon.entity_groups = {
+    {
+        lowest_level = _(level of weakest entity in the group, or 1 if there are none. will be automatically determined if you don't provide it.),
+        acceptable_pool_contents = _(list that can contain any value that fits into pool_contentin randungeon.dungeons, incl "nil". Can be set to nil to allow all.),
+        acceptable_frozen_states = _(list that contains true and/or false, or nil to allow both.),
+        max_entities_per_room = _(int),
+        max_entities_per_room_std1 = (_int, lower max deviation),
+        max_entities_per_room_std2 = (_int, upper max deviation),
+        entitys = _(list of entity names),
+        acceptor = _(nil or a function that checks if area is good; will only be called if all other parameters allow it already; gets room data as input),
+        always_fitting = _(set to true to communicate that this group is never underpowered),
+        end_room_filling = _(set to true to communicate that the room/cave should no longer be filled further after it was attempted to be filled with this group),
+    }
+    ...(further entity groups),
+}
+
+entity spawning:
+
+- ein raum kann max 5 * room_tiles/min_room_tiles * 1.5 mobs haben
+- ein raum kann eine total sum von 5 * room_tiles/min_room_tiles * dungeon_level an entity leveln haben
+- ein raum wird so lange gefüllt bis eins davon erreicht ist
+- ein raum kann kein entity haben das mehr als dungeon_level + 2 entity level hat
+
+entity level:
+- jedes entity hat über eine tabelle ein entity level zugeordnet
+
+entity groups:
+- es gibt mehrere entity groups
+- jede hat: liste von entityn, angabe vom level ihres niedrigst-leveltem entity, angabe in welchen raum arten (water, lava, frozenwater, frozenlava, emptyroom) sie gewählt werden kann, angabe wie viele entity max mit dieser gruppe in einen raum gespawt werden können
+- für jeden raum werden so lange verschiedene(!) gruppen die für den raum (nach level) in frage kommen und für jede gruppe random entity die noch reinpassen ausgewählt, bis keines mehr passt (von der gruppe her; dann wird eine neue gruppe ausgewählt; oder vom raum her; denn wird eine neue gruppe ausgewählt falls noch welche in frage kommen oder der raum als beendet erklärt)

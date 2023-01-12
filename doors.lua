@@ -287,6 +287,7 @@ for _, material in ipairs(woods) do
             for group, value in pairs(node.groups) do
                 new_node.groups[group] = value
             end
+            new_node.groups.randungeon_door = 1
 
             -- drawtypes & stuff:
             new_node.paramtype = "light"
