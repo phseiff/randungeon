@@ -348,7 +348,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 				-- set upper wall part
 				elseif y < room_corner_2.y then
 					set_structure_block({x=x, y=y, z=z}, wall_type_2)
-				-- set upper wall part
+				-- set roof
 				elseif y == room_corner_2.y then
 					set_structure_block({x=x, y=y, z=z}, roof_type)
 				end

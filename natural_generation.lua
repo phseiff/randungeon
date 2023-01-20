@@ -44,12 +44,13 @@ if generation_enabled then
         if randungeon.TURN_OFF_NATURAL_DUNGEO_GENERATION then
             return -- <- option for other mods to deactivate natural dungeon generation
         end
-        local n = 200 -- every 200 blocks we can (!!) build a dungeon
-        minpos.x = math.ceil(minpos.x / n) * n
-        minpos.z = math.ceil(minpos.z / n) * n
         if maxpos.y < 0 or minpos.y > 0 then
             return
         end
+        local n = 200 -- every 200 blocks we can (!!) build a dungeon
+        minpos = table.copy(minpos)
+        minpos.x = math.ceil(minpos.x / n) * n
+        minpos.z = math.ceil(minpos.z / n) * n
         for x = minpos.x, maxpos.x, n do
             for z = minpos.z, maxpos.z, n do
                 local pos = {x=x, y=0, z=z}

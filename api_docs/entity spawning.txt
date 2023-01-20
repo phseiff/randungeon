@@ -12,12 +12,21 @@ randungeon.entity_spawnblocks = {
     ...(further entities),
 }
 
+randungeon.entity_required_surroundings = {
+    _entity_name = _(list of bloks that the entity needs around to spawn)
+    -- doesn't need to be specified for itemstrings
+
+    ...(further entities),
+}
+
 randungeon.entity_groups = {
     {
         lowest_level = _(level of weakest entity in the group, or 1 if there are none. will be automatically determined if you don't provide it.),
+        highest_level = _(level after which the entity group stops occuring),
         acceptable_pool_contents = _(list that can contain any value that fits into pool_contentin randungeon.dungeons, incl "nil". Can be set to nil to allow all.),
         acceptable_frozen_states = _(list that contains true and/or false, or nil to allow both.),
         max_entities_per_room = _(int),
+        max_total_level_per_room = _(int),
         max_entities_per_room_std1 = (_int, lower max deviation),
         max_entities_per_room_std2 = (_int, upper max deviation),
         entitys = _(list of entity names),

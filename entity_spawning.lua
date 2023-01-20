@@ -11,8 +11,11 @@ local get_solid_air_block_replacement = helper_functions.get_solid_air_block_rep
 -- Functions to spawn entities in dungeons when the player enters new areas
 --
 
-randungeon.entity_levels = {}
+randungeon.entity_levels = {
+    air = 1
+}
 randungeon.entity_spawnblocks = {}
+randungeon.entity_required_surroundings = {}
 randungeon.entity_groups = {
     {
         always_fitting = true,
@@ -32,6 +35,7 @@ local function spawn_entities(p1, p2, dungeon_data)
                 local room_tiles_real = (room.p2.x-room.p1.x-1) * (room.p2.z-room.p1.z-1)
                 --print("room_tiles_real " .. tostring(room_tiles_real))
                 local max_entities = math.floor(room_tiles_real / room_tiles_min * 5 * (1 + 0.5 * math.random()))
+                print("max entities: " .. max_entities)
                 local max_level = math.floor(room_tiles_real / room_tiles_min * 5 * room.level)
                 local room_entities = {}
                 local room_entities_in_groups = {}
@@ -71,8 +75,10 @@ local function spawn_entities(p1, p2, dungeon_data)
                         if (entity_group.acceptable_pool_contents == nil or contains(entity_group.acceptable_pool_contents, (room.pool_content or "nil"))) 
                         and (entity_group.acceptable_frozen_states == nil or contains(entity_group.acceptable_frozen_states, room.frozen))
                         and entity_group.lowest_level <= room.level
-                        and (entity_group.acceptor == nil or entity_group.acceptor(room) == true) then
+                        and (entity_group.acceptor == nil or entity_group.acceptor(room) == true)
+                        and not (entity_group.highest_level and room.level > entity_group.highest_level) then
                                 local max_group_entities = entity_group.max_entities_per_room
+                                local max_level_in_room = entity_group.max_total_level_per_room or max_level
                                 if math.random() < 0.5 then
                                     if entity_group.max_entities_per_room_std1 then
                                         max_group_entities = max_group_entities - math.random(0, entity_group.max_entities_per_room_std1)
@@ -85,34 +91,40 @@ local function spawn_entities(p1, p2, dungeon_data)
                                 while #entity_group.entities > 0 and max_entities > 0 and max_level > 0 and #entity_group_entities < max_group_entities do
                                     local potential_entity_index = math.random(1, #entity_group.entities)
                                     local potential_entity = entity_group.entities[potential_entity_index]
-                                    if randungeon.entity_levels[potential_entity] > max_level then
+                                    if randungeon.entity_levels[potential_entity] > math.min(max_level, max_level_in_room)
+                                       or (randungeon.entity_required_surroundings[potential_entity]
+                                       and #minetest.find_nodes_in_area(room.p1, room.p2, randungeon.entity_required_surroundings[potential_entity]) == 0) then
                                         table.remove(entity_group.entities, potential_entity_index)
                                     else
                                         table.insert(entity_group_entities, potential_entity)
                                         max_level = max_level - randungeon.entity_levels[potential_entity]
+                                        max_level_in_room = max_level_in_room - randungeon.entity_levels[potential_entity]
                                         max_entities = max_entities - 1
+                                        print("m.e.: " .. max_entities)
                                     end
                                 end
                         end
                         table.insert(room_entities_in_groups, entity_group_entities)
                     end
-                    if #room_entities_in_groups > 1 then
-                        if math.random() < 1 / #room_entities_in_groups[#room_entities_in_groups] then
-                            table.remove(room_entities_in_groups, #room_entities_in_groups)
-                        end
+                end
+                if #room_entities_in_groups > 1 then
+                    if math.random() < 1 / #room_entities_in_groups[#room_entities_in_groups] then
+                        table.remove(room_entities_in_groups, #room_entities_in_groups)
                     end
-                    for _, group in ipairs(room_entities_in_groups) do
-                        for _, entity_name in ipairs(group) do
-                            table.insert(room_entities, entity_name)
-                        end
+                end
+                for _, group in ipairs(room_entities_in_groups) do
+                    for _, entity_name in ipairs(group) do
+                        table.insert(room_entities, entity_name)
                     end
-                    --print(dump(room))
-                    --print(dump(room_entities))
-                    for _, entity_name in ipairs(room_entities) do
+                end
+                --print(dump(room))
+                print(dump(room_entities_in_groups))
+                for _, entity_name in ipairs(room_entities) do
+                    if entity_name ~= "air" then
                         local valid_spawnblocks
-                        if minetest.registered_entities[entity_name] then
+                        if randungeon.entity_spawnblocks[entity_name] then
                             valid_spawnblocks = randungeon.entity_spawnblocks[entity_name]
-                        elseif minetest.registered_items[entity_name] then
+                        else
                             valid_spawnblocks = {"air", "randungeon:air_glowing"}
                         end
                         local pool_deph = 1
@@ -123,7 +135,7 @@ local function spawn_entities(p1, p2, dungeon_data)
                         for i = #valid_spawnpositions, 1, -1 do
                             local spawnp = valid_spawnpositions[i]
                             local node_under_is_walkable = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name].walkable
-                            if node_under_is_walkable == true then
+                            if node_under_is_walkable == false then
                                 table.remove(valid_spawnpositions, i)
                             end
                         end
@@ -138,8 +150,8 @@ local function spawn_entities(p1, p2, dungeon_data)
                             end
                         end
                     end
-                    print("---")
                 end
+                print("---")
             end
         end
     end
