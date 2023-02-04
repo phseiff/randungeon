@@ -10,6 +10,7 @@ minetest.register_node("randungeon:dungeon_air", {
 	sunlight_propagates = true,
 	walkable = false,
 	groups = {not_in_creative_inventory = 1},
+	drop = {},
 	buildable_to = true,
 	pointable = false
 })
@@ -22,6 +23,7 @@ minetest.register_node("randungeon:air_glowing", {
 	sunlight_propagates = true,
 	walkable = false,
 	groups = {not_in_creative_inventory = 1},
+	drop = {},
 	light_source = default.LIGHT_MAX,
 	buildable_to = true,
 	pointable = false

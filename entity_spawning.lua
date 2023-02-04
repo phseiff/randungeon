@@ -16,12 +16,7 @@ randungeon.entity_levels = {
 }
 randungeon.entity_spawnblocks = {}
 randungeon.entity_required_surroundings = {}
-randungeon.entity_groups = {
-    {
-        always_fitting = true,
-        end_room_filling = true
-    }
-}
+randungeon.entity_groups = {}
 
 local BUFFER_SIZE = 10
 local SPAWN_CHECK_INTERVAL = 10
@@ -146,7 +141,10 @@ local function spawn_entities(p1, p2, dungeon_data)
                             if minetest.registered_entities[entity_name] then
                                 minetest.add_entity(chosen_spawn_pos, entity_name)
                             elseif minetest.registered_items[entity_name] then
-                                minetest.add_item(chosen_spawn_pos, entity_name)
+                                local item_obj = minetest.add_item(chosen_spawn_pos, entity_name)
+                                item_obj:get_luaentity().immortal_item = true
+                                -- set this so other mods can use it as an indicator that the item was set to not expire
+                                -- needs to be implemented by other mods, of course
                             end
                         end
                     end
@@ -177,7 +175,7 @@ end
 
 local spawn_tick = 0
 minetest.register_globalstep(function(dtime)
-    if #randungeon.entity_groups <= 1 then
+    if #randungeon.entity_groups == 0 then
         return
     end
     spawn_tick = spawn_tick + dtime
