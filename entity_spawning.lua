@@ -21,7 +21,11 @@ randungeon.entity_groups = {}
 local BUFFER_SIZE = 10
 local SPAWN_CHECK_INTERVAL = 10
 
-local function spawn_entities(p1, p2, dungeon_data)
+local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
+    local spawned_entities = {}
+    if actually_spawn == nil then -- <- if false the function will just return a list of what it would have spawned otherwise
+        actually_spawn = true
+    end
     for y = p1.y, p2.y do
         if dungeon_data.rooms[y] then
             for _, room in ipairs(dungeon_data.rooms[y]) do
@@ -114,6 +118,7 @@ local function spawn_entities(p1, p2, dungeon_data)
                 end
                 --print(dump(room))
                 print(dump(room_entities_in_groups))
+                local positions_where_mobs_already_spawned = {}
                 for _, entity_name in ipairs(room_entities) do
                     if entity_name ~= "air" then
                         local valid_spawnblocks
@@ -127,25 +132,52 @@ local function spawn_entities(p1, p2, dungeon_data)
                             pool_deph = randungeon.nature_types[room.pool_content].pool_deph or 1
                         end
                         local valid_spawnpositions = minetest.find_nodes_in_area({x=room.p1.x, y=room.p1.y-pool_deph+1, z=room.p1.z}, room.p2, valid_spawnblocks)
+                        -- remove every spawn position if mob doesn't fit there, would float, or adjust spawn position based on mob collissionbox
                         for i = #valid_spawnpositions, 1, -1 do
                             local spawnp = valid_spawnpositions[i]
                             local node_under_is_walkable = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name].walkable
-                            if node_under_is_walkable == false then
+                            if not node_under_is_walkable then
                                 table.remove(valid_spawnpositions, i)
+                            elseif minetest.get_modpath("mobs") and not minetest.registered_items[entity_name] then
+                                local modified_spawn_pos = mobs:can_spawn(spawnp, entity_name)
+                                if not modified_spawn_pos then
+                                    table.remove(valid_spawnpositions, i)
+                                else
+                                    print(entity_name)
+                                    local entity_definition = minetest.registered_entities[entity_name]
+                                    valid_spawnpositions[i].y = modified_spawn_pos.y + (entity_definition.collisionbox[2] * -1) - 0.4
+                                end
                             end
                         end
+                        -- remove spawn positions that are already used, if there are other options:
+                        local valid_spawnpositions_with_no_doubles = table.copy(valid_spawnpositions)
+                        for i = #valid_spawnpositions_with_no_doubles, 1, -1 do
+                            local spawnp = valid_spawnpositions_with_no_doubles[i]
+                            local spawnp_already_used = contains(positions_where_mobs_already_spawned, minetest.pos_to_string(spawnp))
+                            if spawnp_already_used then
+                                table.remove(valid_spawnpositions_with_no_doubles, i)
+                            end
+                        end
+                        if #valid_spawnpositions_with_no_doubles > 0 then
+                            valid_spawnpositions = valid_spawnpositions_with_no_doubles
+                        end
+                        -- spawn entity at remaining spawn position, if applicable
                         if #valid_spawnpositions == 0 then
                             print("failed to find a valid spawn position for " .. entity_name .. "!")
                         else
                             local chosen_spawn_pos = valid_spawnpositions[math.random(1, #valid_spawnpositions)]
-                            if minetest.registered_entities[entity_name] then
-                                minetest.add_entity(chosen_spawn_pos, entity_name)
-                            elseif minetest.registered_items[entity_name] then
-                                local item_obj = minetest.add_item(chosen_spawn_pos, entity_name)
-                                item_obj:get_luaentity().immortal_item = true
-                                -- set this so other mods can use it as an indicator that the item was set to not expire
-                                -- needs to be implemented by other mods, of course
+                            table.insert(spawned_entities, entity_name)
+                            if actually_spawn then
+                                if minetest.registered_entities[entity_name] then
+                                    minetest.add_entity(chosen_spawn_pos, entity_name)
+                                elseif minetest.registered_items[entity_name] then
+                                    local item_obj = minetest.add_item(chosen_spawn_pos, entity_name)
+                                    item_obj:get_luaentity().immortal_item = true
+                                    -- set this so other mods can use it as an indicator that the item was set to not expire
+                                    -- needs to be implemented by other mods, of course
+                                end
                             end
+                            table.insert(positions_where_mobs_already_spawned, minetest.pos_to_string(chosen_spawn_pos))
                         end
                     end
                 end
@@ -156,7 +188,11 @@ local function spawn_entities(p1, p2, dungeon_data)
     -- save dungeon data
 	local randungeon_dungeons_string = minetest.serialize(randungeon.dungeons)
 	randungeon.storage:set_string("dungeons", randungeon_dungeons_string)
+    -- return list of spawned entities
+    return spawned_entities
 end
+
+randungeon.spawn_entities = spawn_entities
 
 local function spawn_entities_if_necessary(player)
     local pos = player:get_pos()
