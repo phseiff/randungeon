@@ -32,9 +32,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                 local entity_groups = table.copy(randungeon.entity_groups)
                 local room_tiles_min = 36
                 local room_tiles_real = (room.p2.x-room.p1.x-1) * (room.p2.z-room.p1.z-1)
-                --print("room_tiles_real " .. tostring(room_tiles_real))
                 local max_entities = math.floor(room_tiles_real / room_tiles_min * 5 * (1 + 0.5 * math.random()))
-                print("max entities: " .. max_entities)
                 local max_level = math.floor(room_tiles_real / room_tiles_min * 5 * room.level)
                 local room_entities = {}
                 local room_entities_in_groups = {}
@@ -45,6 +43,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                         strongest_non_op_entity_level = room.level
                     else
                         for _, entity_name in ipairs(entity_groups[i].entities) do
+                            print(entity_name)
                             if randungeon.entity_levels[entity_name] <= room.level then
                                 strongest_non_op_entity_level = math.max(strongest_non_op_entity_level, randungeon.entity_levels[entity_name])
                             end
@@ -99,7 +98,6 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                                         max_level = max_level - randungeon.entity_levels[potential_entity]
                                         max_level_in_room = max_level_in_room - randungeon.entity_levels[potential_entity]
                                         max_entities = max_entities - 1
-                                        print("m.e.: " .. max_entities)
                                     end
                                 end
                         end

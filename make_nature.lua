@@ -20,10 +20,18 @@ local function make_mushroom(pos)
     end
 end
 
+local function is_air(node_name)
+    local node_definition = minetest.registered_nodes[node_name]
+    if node_definition.buildable_to and node_definition.walkable == false and node_definition.drawtype == "airlike" then
+        return true
+    end
+    return false
+end
+
 local function make_waterlilie(pos)
     for y = 1, 60 do
         local block = minetest.get_node({x=pos.x, y=pos.y+y, z=pos.z}).name
-        if block == "air" then
+        if is_air(block) then
             minetest.set_node({x=pos.x, y=pos.y+y, z=pos.z}, {name="flowers:waterlily_waving", param2=math.random(0, 3)})
         end
         if block ~= "default:water_source" and block ~= "randungeon:water_source" then
@@ -134,12 +142,12 @@ local function make_pretty_forest(pos)
     minetest.set_node(pos, {name="default:dirt_with_grass"})
 
     -- set mese lamp posts
-    if math.random() < 1/25 and node_above == "air" and mese_lamps then
+    if math.random() < 1/25 and is_air(node_above) and mese_lamps then
         make_glowstick({x=pos.x, y=pos.y+1, z=pos.z})
 
     -- set tree
-    elseif node_above == "air" then
-        if math.random() < 1/25 and #minetest.find_nodes_in_area({x=pos.x, y=pos.y+1, z=pos.z}, {x=pos.x, y=pos.y+8, z=pos.z}, {"air"}) == 8 then
+    elseif is_air(node_above) then
+        if math.random() < 1/25 and #minetest.find_nodes_in_area({x=pos.x, y=pos.y+1, z=pos.z}, {x=pos.x, y=pos.y+8, z=pos.z}, {"group:air"}) == 8 then
             default.grow_tree({x=pos.x, y=pos.y+1, z=pos.z}, (math.random() < 1/3) and can_have_apples)
         -- make grass
         elseif grasses and math.random() < 1/5 then
@@ -172,7 +180,8 @@ local function make_pretty_forest(pos)
 end
 
 minetest.register_node("randungeon:pretty_forest", {
-    groups = {not_in_creative_inventory = 1, make_nature_block = 1}
+    groups = {not_in_creative_inventory = 1, make_nature_block = 1},
+    tiles = {"default_grass.png"}
 })
 
 -- SWAMPY FOREST
@@ -263,13 +272,17 @@ local function make_swampy_forest(pos)
             make_waterlilie(pos1)
         end
     
-    elseif node2 == "air" or node2 == "default:water_flowing" then
+    elseif is_air(node2) or node2 == "default:water_flowing" then
         -- is water:
-        local deep_water_is_possible = minetest.get_node({x=pos2.x+1, y=pos2.y, z=pos2.z}).name ~= "air" and minetest.get_node({x=pos2.x-1, y=pos2.y, z=pos2.z}).name ~= "air"
-                                       and minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z+1}).name ~= "air" and minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z-1}).name ~= "air"
-                                       and minetest.get_node(pos2).name == "air"
-        local shallow_water_is_possible = minetest.get_node({x=pos1.x+1, y=pos1.y, z=pos1.z}).name ~= "air" and minetest.get_node({x=pos1.x-1, y=pos1.y, z=pos1.z}).name ~= "air"
-                                          and minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z+1}).name ~= "air" and minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z-1}).name ~= "air"
+        local deep_water_is_possible = not is_air(minetest.get_node({x=pos2.x+1, y=pos2.y, z=pos2.z}).name)
+                                   and not is_air(minetest.get_node({x=pos2.x-1, y=pos2.y, z=pos2.z}).name)
+                                   and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z+1}).name)
+                                   and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z-1}).name)
+                                   and is_air(minetest.get_node(pos2).name)
+        local shallow_water_is_possible = not is_air(minetest.get_node({x=pos1.x+1, y=pos1.y, z=pos1.z}).name)
+                                      and not is_air(minetest.get_node({x=pos1.x-1, y=pos1.y, z=pos1.z}).name)
+                                      and not is_air(minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z+1}).name)
+                                      and not is_air(minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z-1}).name)
 
         -- try deeper water if it can't flow away
         if deep_water_is_possible and math.random() < 3/4 then
@@ -291,12 +304,12 @@ local function make_swampy_forest(pos)
                 make_waterlilie(pos1)
             end
         -- is land:
-        elseif minetest.get_node(pos2).name == "air" then
+        elseif is_air(minetest.get_node(pos2).name) then
             local vegetation_pos = pos3
             if dark_dirt then
                 minetest.set_node(pos1, {name="default:permafrost"})
                 minetest.set_node(pos2, {name="default:permafrost_with_moss"})
-                if minetest.get_node(pos3).name == "air" and minetest.get_node(pos4).name == "air" then
+                if is_air(minetest.get_node(pos3).name) and is_air(minetest.get_node(pos4).name) then
                     minetest.set_node(pos2, {name="default:permafrost"})
                     minetest.set_node(pos3, {name="default:permafrost_with_moss"})
                     vegetation_pos = pos4
@@ -304,14 +317,14 @@ local function make_swampy_forest(pos)
             else
                 minetest.set_node(pos1, {name="default:dirt"})
                 minetest.set_node(pos2, {name="default:dirt_with_rainforest_litter"})
-                if minetest.get_node(pos3).name == "air" and minetest.get_node(pos4).name == "air" then
+                if is_air(minetest.get_node(pos3).name) and is_air(minetest.get_node(pos4).name) then
                     minetest.set_node(pos2, {name="default:dirt"})
                     minetest.set_node(pos3, {name="default:dirt_with_rainforest_litter"})
                     vegetation_pos = pos4
                 end
             end
             -- vegetation:
-            if minetest.get_node(pos4).name == "air" then
+            if is_air(minetest.get_node(pos4).name) then
                 -- make ferns
                 if ferns and ((dark_dirt and math.random() < 1/3) or (not dark_dirt and math.random() < 1/7)) then
                     make_fern(pos4)
@@ -320,7 +333,7 @@ local function make_swampy_forest(pos)
                     make_mushroom(pos4)
                 -- make trees
                 elseif (math.random() < 1/20 or trees and math.random() < 1/3)
-                       and #minetest.find_nodes_in_area(pos4, {x=pos4.x, y=pos4.y+14, z=pos4.z}, {"air"}) == 15 then
+                       and #minetest.find_nodes_in_area(pos4, {x=pos4.x, y=pos4.y+14, z=pos4.z}, {"group:air"}) == 15 then
                     default.grow_jungle_tree(pos4, false)
                     if dark_dirt then
                         -- dark dirt version has pine wood
@@ -357,7 +370,8 @@ local function make_swampy_forest(pos)
 end
 
 minetest.register_node("randungeon:swampy_forest", {
-    groups = {not_in_creative_inventory = 1, make_nature_block = 1}
+    groups = {not_in_creative_inventory = 1, make_nature_block = 1},
+    tiles = {"default_grass.png"}
 })
 
 
@@ -381,6 +395,8 @@ randungeon.nature_types = {
         make_nature = make_swampy_forest
     }
 }
+
+randungeon.nature_functions = {}
 
 local function get_random_cave_nature_type()
     local total_weight = 0
@@ -428,6 +444,12 @@ end
 local function make_metadata_for_nature(pos, nature_type)
     return randungeon.nature_types[nature_type].make_metadata(pos)
 end
+
+randungeon.nature_functions.get_random_cave_nature_type = get_random_cave_nature_type
+randungeon.nature_functions.get_random_pool_nature_type = get_random_pool_nature_type
+randungeon.nature_functions.make_nature = make_nature
+randungeon.nature_functions.make_nature_in_area = make_nature_in_area
+randungeon.nature_functions.make_metadata_for_nature = make_metadata_for_nature
 
 return {
     make_metadata_for_nature = make_metadata_for_nature,

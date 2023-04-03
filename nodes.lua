@@ -24,7 +24,7 @@ minetest.register_node("randungeon:air_glowing", {
 	sunlight_propagates = true,
 	walkable = false,
 	floodable = true,
-	groups = {not_in_creative_inventory = 1},
+	groups = {not_in_creative_inventory = 1, air = 1},
 	drop = {},
 	light_source = default.LIGHT_MAX,
 	buildable_to = true,
