@@ -725,7 +725,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 				center_pos = bubble_pos,
 				radius = bubble_radius,
 				type = material,
-				frozen = nil,
+				frozen = false, -- <- this gets corrected later when necessary
 				nature = nature,
 				fill_height = pegel,
 				nature_metadata = nature_metadata.fields
@@ -1019,7 +1019,7 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 	-- unforceload area
 	remove_forceload(forceloaded_area)
 
-	-- add level information to every room and bubble cave
+	-- add level and frozen state information to every room and bubble cave
     local y_max = pos.y
     for i = 1, #dungeon_maps do
         local y_min
@@ -1034,14 +1034,20 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 			for _, room in ipairs(rooms) do
 				if room.p1.y >= y_min and room.p1.y < y_max then
 					room.level = i
+					if dungeon_maps[i].frozen_corridors then
+						room.frozen = true
+					end
 				end
 			end
 		end
 		for _, caves in pairs(this_dungeon.bubble_caves) do
 			for _, cave in ipairs(caves) do
 				local y = cave.center_pos.y - cave.radius
-				if y >= y_min and y < y_max then
+				if (y >= y_min or i == #dungeon_maps) and (y < y_max or i == 1) then
 					cave.level = i
+					if dungeon_maps[i].frozen_caves then
+						cave.frozen = true
+					end
 				end
 			end
 		end

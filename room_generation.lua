@@ -331,7 +331,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	local room_data = {
 		p1 = table.copy(room_corner_1),
 		p2 = table.copy(room_corner_2),
-		frozen = room_style.frozen
+		frozen = false
 	}
 	table.insert(rooms_data[room_corner_2.y], room_data)
 
@@ -537,6 +537,11 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	local pool_chance = room_style.is_treasure_level and 0.5 or 1/3
 	-- print("room style: " .. minetest.serialize(room_style))
     if (math.random() < pool_chance and (edge_pillars or pillar_room or not can_have_pillars) and room_style.pool ~= false) or room_style.pool == true then
+		-- pool rooms get tagged as frozen when they are on frozen levels
+		-- (others get tagged by build_dungeon_from_blocks.lua as needed after frozen_levels.lua has run)
+		if frozen then
+			room_data.frozen = true
+		end
         -- decide on what to fill pool with:
         local pool_content
         local emergency_pool_bassin

@@ -29,6 +29,7 @@ randungeon.entity_groups = {
         max_total_level_per_room = _(int),
         max_entities_per_room_std1 = (_int, lower max deviation),
         max_entities_per_room_std2 = (_int, upper max deviation),
+        caves_or_rooms = "caves", "rooms", "both" or nil (indicating "rooms")
         entitys = _(list of entity names),
         acceptor = _(nil or a function that checks if area is good; will only be called if all other parameters allow it already; gets room data as input),
         always_fitting = _(set to true to communicate that this group is never underpowered),
