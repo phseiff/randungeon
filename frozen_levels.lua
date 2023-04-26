@@ -19,7 +19,8 @@ local function freeze_area(p1, p2, frozen_corridors)
                 local nname_above = minetest.get_node(p_above).name
                 local new_node = nil
                 local new_node_above = nil
-                if contains({"default:dirt_with_grass", "default:dirt_with_rainforest_litter", "default:permafrost_with_moss"}, nname) then
+                if contains({"default:dirt_with_grass", "default:dirt_with_rainforest_litter", "default:permafrost_with_moss"}, nname)
+                and not minetest.get_item_group(nname_above, "water") ~= 0 then
                     if nname ==  "default:permafrost_with_moss" then
                         new_node = "randungeon:permafrost_with_snow"
                     else
@@ -38,7 +39,8 @@ local function freeze_area(p1, p2, frozen_corridors)
                     end
                 end
                 if minetest.get_item_group(nname, "water") >= 1 and minetest.registered_nodes[nname].liquidtype == "source" then
-                    if (nname_above == "air" or nname_above == "randungeon:air_glowing" or nname_above == "flowers:waterlily_waving") or math.random() < 1/3 then
+                    if (nname_above == "air" or nname_above == "randungeon:air_glowing" or nname_above == "flowers:waterlily_waving")
+                    or (math.random() < 1/3 and minetest.get_natural_light(p, 0.5) == 0) then
                         new_node = "default:ice"
                     end
                 end

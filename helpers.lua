@@ -69,6 +69,11 @@ local function get_solid_air_block_replacement(pos, cobbelify)
 end
 
 local function is_in_frozen_biome(pos)
+	-- code for v6
+	if minetest.get_mapgen_setting("mg_name") == "v6" then
+		return contains({"Taiga", "Tundra"}, biomeinfo.get_v6_biome(pos))
+	end
+	-- code for v7 and other mapgens that accept register_biome definitions
 	local biome_data = minetest.get_biome_data(pos)
 	if biome_data == nil then
 		return nil

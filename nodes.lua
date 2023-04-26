@@ -2,6 +2,15 @@
 -- Special nodes
 --
 
+-- constants for other mods to use to offer a way to ignore randungeon's bad node naming practices
+
+randungeon.CAVE_WATER = "default:water_source"
+randungeon.POOL_WATER = "default:river_water_source"
+randungeon.SWAMP_WATER = "randungeon:river_water_source"
+
+randungeon.CAVE_LAVA = "default:lava_source"
+randungeon.POOL_LAVA = "randungeon:lava_source"
+
 -- teporary stand in block for air in dungeons, used during dungeon generation
 minetest.register_node("randungeon:dungeon_air", {
 	description = "Dungeon Air (used by dungeon generator during genertion)",
@@ -182,25 +191,20 @@ minetest.register_node("randungeon:dungeon_treasure", {
 -- DUNGEON WATER
 
 -- special water source that only flows one block far
-local dungeon_water_source = {}
-for key, value in pairs(minetest.registered_nodes["default:water_source"]) do
-	dungeon_water_source[key] = value
-end
+local dungeon_water_source = table.copy(minetest.registered_nodes["default:water_source"])
 dungeon_water_source.liquid_alternative_flowing = "randungeon:water_flowing"
 dungeon_water_source.liquid_alternative_source = "randungeon:water_source"
 dungeon_water_source.liquid_range = 1
 dungeon_water_source.description = "Water Source (with 1-block-range flow limit)\n(becomes normal water with bucket)"
-dungeon_water_source.groups = {water = 3, liquid = 3, cools_lava = 1, not_in_creative_inventory = 1}
+dungeon_water_source.groups.not_in_creative_inventory = 1
 minetest.register_node("randungeon:water_source", dungeon_water_source)
 
 -- flowing version of it
-local dungeon_water_flowing = {}
-for key, value in pairs(minetest.registered_nodes["default:water_flowing"]) do
-	dungeon_water_flowing[key] = value
-end
+local dungeon_water_flowing = table.copy(minetest.registered_nodes["default:water_flowing"])
 dungeon_water_flowing.liquid_alternative_flowing = "randungeon:water_flowing"
 dungeon_water_flowing.liquid_alternative_source = "randungeon:water_source"
 dungeon_water_flowing.liquid_range = 1
+dungeon_water_flowing.groups.flowing_water = 1
 minetest.register_node("randungeon:water_flowing", dungeon_water_flowing)
 
 -- make it so it gives a normal water bucket when collected via bucket
