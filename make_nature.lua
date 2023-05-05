@@ -21,6 +21,9 @@ local function make_mushroom(pos)
 end
 
 local function is_air(node_name)
+    if node_name == "air" then
+        return true
+    end
     local node_definition = minetest.registered_nodes[node_name]
     if node_definition.buildable_to and node_definition.walkable == false and node_definition.drawtype == "airlike" then
         return true
@@ -147,7 +150,7 @@ local function make_pretty_forest(pos)
 
     -- set tree
     elseif is_air(node_above) then
-        if math.random() < 1/25 and #minetest.find_nodes_in_area({x=pos.x, y=pos.y+1, z=pos.z}, {x=pos.x, y=pos.y+8, z=pos.z}, {"group:air"}) == 8 then
+        if math.random() < 1/25 and #minetest.find_nodes_in_area({x=pos.x, y=pos.y+1, z=pos.z}, {x=pos.x, y=pos.y+8, z=pos.z}, {"air", "group:air"}) == 8 then
             default.grow_tree({x=pos.x, y=pos.y+1, z=pos.z}, (math.random() < 1/3) and can_have_apples)
         -- make grass
         elseif grasses and math.random() < 1/5 then
@@ -333,7 +336,7 @@ local function make_swampy_forest(pos)
                     make_mushroom(pos4)
                 -- make trees
                 elseif (math.random() < 1/20 or trees and math.random() < 1/3)
-                       and #minetest.find_nodes_in_area(pos4, {x=pos4.x, y=pos4.y+14, z=pos4.z}, {"group:air"}) == 15 then
+                       and #minetest.find_nodes_in_area(pos4, {x=pos4.x, y=pos4.y+14, z=pos4.z}, {"air", "group:air"}) == 15 then
                     default.grow_jungle_tree(pos4, false)
                     if dark_dirt then
                         -- dark dirt version has pine wood

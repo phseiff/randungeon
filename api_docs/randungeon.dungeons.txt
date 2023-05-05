@@ -27,7 +27,7 @@ randungeon.dungeons = {
                     {
                          p1 = _,
                          p2 = _,
-                         pool_content = _(one of default:river_water, randungeon:lava_source, the name of a nature block, or nil),
+                         pool_content = _(one of default:river_water, randungeon:lava_source, the name of a nature block, or "nil"),
                          frozen = _true/false,
                          nature_metadata = nil or nature metadata,
                          level = _dungeon_level

@@ -15,6 +15,7 @@ randungeon.entity_levels = {
     air = 1
 }
 randungeon.entity_spawnblocks = {}
+randungeon.cave_entity_spawnblocks = {}
 randungeon.entity_required_surroundings = {}
 randungeon.entity_groups = {}
 
@@ -42,7 +43,7 @@ local function fill_room_or_cave_with_entity_group(room, entity_group, room_enti
     local entity_group_entities = {}
 
     -- check basic conditions required for this group to fit into this room
-    if (entity_group.acceptable_pool_contents == nil or contains(entity_group.acceptable_pool_contents, (room.pool_content or room.nature or room.type or "nil"))) 
+    if (entity_group.acceptable_pool_contents == nil or intersects(entity_group.acceptable_pool_contents, {room.pool_content, room.nature, room.type}))
     and (entity_group.acceptable_frozen_states == nil or contains(entity_group.acceptable_frozen_states, room.frozen))
     and entity_group.lowest_level <= room.level
     and (entity_group.acceptor == nil or entity_group.acceptor(room) == true)
@@ -128,10 +129,12 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
         if entity_name ~= "air" then
             -- get list of blocks the entity can spawn in
             local valid_spawnblocks
-            if randungeon.entity_spawnblocks[entity_name] then
-                valid_spawnblocks = randungeon.entity_spawnblocks[entity_name]
+            if room.center_pos and randungeon.cave_entity_spawnblocks[entity_name] then 
+                valid_spawnblocks = randungeon.cave_entity_spawnblocks[entity_name] -- if in a cave, use randungeon.cave_entity_spawnblocks
+            elseif randungeon.entity_spawnblocks[entity_name] then
+                valid_spawnblocks = randungeon.entity_spawnblocks[entity_name] -- else, use randungeon.entity_spawnblocks
             else
-                valid_spawnblocks = {"air", "randungeon:air_glowing"}
+                valid_spawnblocks = {"air", "randungeon:air_glowing"} -- else, use defaults
             end
             local pool_deph = 1
             if randungeon.nature_types[room.pool_content] then

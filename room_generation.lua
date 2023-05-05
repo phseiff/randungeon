@@ -563,7 +563,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
             emergency_pool_bassin = "default:obsidianbrick"
         end
 		-- enter pool content in randungeon.dungeons:
-		room_data.pool_content = pool_content
+		room_data.pool_content = pool_content or "nil"
         -- freeze if needed:
         local frozen_version = {
             ["default:river_water_source"] = "default:ice",

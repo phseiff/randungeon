@@ -11,7 +11,13 @@ randungeon.SWAMP_WATER = "randungeon:river_water_source"
 randungeon.CAVE_LAVA = "default:lava_source"
 randungeon.POOL_LAVA = "randungeon:lava_source"
 
--- teporary stand in block for air in dungeons, used during dungeon generation
+randungeon.EMPTY_ROOM = "nil"
+
+randungeon.EMPTY_CAVE = "air"
+randungeon.WATER_CAVE = randungeon.CAVE_WATER
+randungeon.LAVA_CAVE = randungeon.CAVE_LAVA
+
+-- temporary stand in block for air in dungeons, used during dungeon generation
 minetest.register_node("randungeon:dungeon_air", {
 	description = "Dungeon Air (used by dungeon generator during genertion)",
 	drawtype = "airlike",

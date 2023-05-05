@@ -23,7 +23,7 @@ randungeon.entity_groups = {
     {
         lowest_level = _(level of weakest entity in the group, or 1 if there are none. will be automatically determined if you don't provide it.),
         highest_level = _(level after which the entity group stops occuring),
-        acceptable_pool_contents = _(list that can contain any value that fits into pool_contentin randungeon.dungeons, incl "nil". Can be set to nil to allow all.),
+        acceptable_pool_contents = _(list that can contain any value that fits into pool_contentin randungeon.dungeons, incl "nil". Can be set to nil to allow all.*),
         acceptable_frozen_states = _(list that contains true and/or false, or nil to allow both.),
         max_entities_per_room = _(int),
         max_total_level_per_room = _(int),
@@ -52,3 +52,7 @@ entity groups:
 - es gibt mehrere entity groups
 - jede hat: liste von entityn, angabe vom level ihres niedrigst-leveltem entity, angabe in welchen raum arten (water, lava, frozenwater, frozenlava, emptyroom) sie gewählt werden kann, angabe wie viele entity max mit dieser gruppe in einen raum gespawt werden können
 - für jeden raum werden so lange verschiedene(!) gruppen die für den raum (nach level) in frage kommen und für jede gruppe random entity die noch reinpassen ausgewählt, bis keines mehr passt (von der gruppe her; dann wird eine neue gruppe ausgewählt; oder vom raum her; denn wird eine neue gruppe ausgewählt falls noch welche in frage kommen oder der raum als beendet erklärt)
+
+
+
+*: you can/should use the global variables listed at the top of nodes.lua for this to make it compatible with potential future versions and more readable as well
