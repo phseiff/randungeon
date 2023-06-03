@@ -331,6 +331,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 	local room_data = {
 		p1 = table.copy(room_corner_1),
 		p2 = table.copy(room_corner_2),
+		pool_content = "nil",
 		frozen = false
 	}
 	table.insert(rooms_data[room_corner_2.y], room_data)

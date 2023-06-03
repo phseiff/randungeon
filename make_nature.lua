@@ -382,6 +382,7 @@ minetest.register_node("randungeon:swampy_forest", {
 
 randungeon.nature_types = {
     ["randungeon:pretty_forest"] = {
+        name = "pretty forest",
         caves_weight = 0.5,
         pools_weight = 0.5,
         pool_deph = 1,
@@ -390,6 +391,7 @@ randungeon.nature_types = {
         make_nature = make_pretty_forest,
     },
     ["randungeon:swampy_forest"] = {
+        name = "swampy forest",
         caves_weight = 0.5,
         pools_weight = 0.5,
         pool_deph = 3,

@@ -63,6 +63,7 @@ local make_dungeon = dungeon_building_functions.make_dungeon
 
 -- Entity Spawning Functions
 dofile(mod_path.."/entity_spawning.lua")
+dofile(mod_path.."/entity_spawning_debug.lua")
 
 -- Natural Dungeon Generation
 dofile(mod_path.."/natural_generation.lua")

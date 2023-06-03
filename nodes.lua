@@ -13,7 +13,8 @@ randungeon.POOL_LAVA = "randungeon:lava_source"
 
 randungeon.EMPTY_ROOM = "nil"
 
-randungeon.EMPTY_CAVE = "air"
+randungeon.EMPTY_CAVE = "air" -- no water/lava
+randungeon.NO_NATURE_CAVE = false
 randungeon.WATER_CAVE = randungeon.CAVE_WATER
 randungeon.LAVA_CAVE = randungeon.CAVE_LAVA
 

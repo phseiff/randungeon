@@ -8,6 +8,17 @@ local bool_to_number = helper_functions.bool_to_number
 local get_solid_air_block_replacement = helper_functions.get_solid_air_block_replacement
 
 --
+-- Introduce a privilege that gives special dev rights/attrs
+--
+
+minetest.register_privilege("randungeon_dev", {
+	description = "Allows breathing in solid blocks & using dev commands",
+	give_to_singleplayer = false,
+	give_to_admin = false,
+})
+
+
+--
 -- Functions to spawn entities in dungeons when the player enters new areas
 --
 
@@ -21,6 +32,10 @@ randungeon.entity_groups = {}
 
 local BUFFER_SIZE = 10
 local SPAWN_CHECK_INTERVAL = 10
+
+randungeon.match_cave_type_and_nature = function(type, nature)
+    return tostring(type) .. " " .. tostring(nature)
+end
 
 local function fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
 
@@ -43,12 +58,17 @@ local function fill_room_or_cave_with_entity_group(room, entity_group, room_enti
     local entity_group_entities = {}
 
     -- check basic conditions required for this group to fit into this room
-    if (entity_group.acceptable_pool_contents == nil or intersects(entity_group.acceptable_pool_contents, {room.pool_content, room.nature, room.type}))
+    local room_content_descriptors_to_match
+    if room.center_pos then
+        room_content_descriptors_to_match = {room.nature, room.type, randungeon.match_cave_type_and_nature(room.type, room.nature)}
+    else
+        room_content_descriptors_to_match = {room.pool_content}
+    end
+    if (entity_group.acceptable_pool_contents == nil or intersects(entity_group.acceptable_pool_contents, room_content_descriptors_to_match))
     and (entity_group.acceptable_frozen_states == nil or contains(entity_group.acceptable_frozen_states, room.frozen))
     and entity_group.lowest_level <= room.level
     and (entity_group.acceptor == nil or entity_group.acceptor(room) == true)
     and not (entity_group.highest_level and room.level > entity_group.highest_level) then
-
         -- set basic variables to describe room capacity that we can decrease as we fill the room
         local max_group_entities = entity_group.max_entities_per_room
         local max_level_in_room = entity_group.max_total_level_per_room or max_level
@@ -74,7 +94,7 @@ local function fill_room_or_cave_with_entity_group(room, entity_group, room_enti
                 if room.p1 then
                     required_surroundings_fulfilled = #minetest.find_nodes_in_area(room.p1, room.p2, required_surroundings) > 0
                 elseif room.center_pos then
-                    required_surroundings_fulfilled = #minetest.find_node_near(room.center_pos, room.radius+2, nodenames, required_surroundings)
+                    required_surroundings_fulfilled = minetest.find_node_near(room.center_pos, room.radius+2, required_surroundings) ~= nil
                 end
             end
             -- if entity is too powerful or too much or its surroundings are unfitting, remove it from the copy of the group we operate on for this room
@@ -99,6 +119,9 @@ local function group_is_underpowered(room, entity_group)
         strongest_non_op_entity_level = room.level
     else
         for _, entity_name in ipairs(entity_group.entities) do
+            if randungeon.entity_levels[entity_name] == nil then
+                print(entity_name .. " misses level specification.")
+            end
             if randungeon.entity_levels[entity_name] <= room.level then
                 strongest_non_op_entity_level = math.max(strongest_non_op_entity_level, randungeon.entity_levels[entity_name])
             end
@@ -116,6 +139,8 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             table.remove(room_entities_in_groups, #room_entities_in_groups)
         end
     end
+    -- save that we spawned these entities in this group
+    room.spawned_entities = room_entities_in_groups
     -- put all room entities into a single list
     local room_entities = {}
     for _, group in ipairs(room_entities_in_groups) do
@@ -184,7 +209,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 valid_spawnpositions = valid_spawnpositions_with_no_doubles
             end
             -- remove spawn positions that don't have environment nodes in close-ish proximity, if there are other options:
-            if randungeon.entity_required_surroundings[entity_name] then
+            if randungeon.entity_required_surroundings[entity_name] and #valid_spawnpositions > 0 then
                 for _ = 1, 10 do
                     local i = math.random(1, #valid_spawnpositions)
                     if minetest.find_node_near(valid_spawnpositions[i], 2, randungeon.entity_required_surroundings[entity_name]) then
@@ -239,11 +264,6 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     if caves_or_rooms ~= "both" and caves_or_rooms ~= "caves" then
                         unfit_for_caves = true
                     end
-                    if unfit_for_caves == false then
-                        print("cave: " .. minetest.serialize(cave))
-                    else
-                        print("unfit to bear sheeps: " .. minetest.serialize(cave))
-                    end
 
                     -- find out if group is underpowered
                     local group_is_underpowered = group_is_underpowered(cave, entity_groups[i])
@@ -251,7 +271,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     -- decide which entities from which group will fill the cave
                     if math.random() <= 1 / group_is_underpowered and not unfit_for_caves then
                         local entity_group = table.remove(entity_groups, i)
-                        local max_entities, max_level = fill_room_or_cave_with_entity_group(cave, entity_group, cave_entities_in_groups, max_entities, max_level)
+                        max_entities, max_level = fill_room_or_cave_with_entity_group(cave, entity_group, cave_entities_in_groups, max_entities, max_level)
                         if max_entities == false then
                             break
                         end
@@ -260,7 +280,6 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     end
                 end
                 -- physically fill cave with the entities
-                print(minetest.serialize(cave_entities_in_groups))
                 physically_fill_room_or_cave_with_entities(cave, cave_entities_in_groups, spawned_entities, actually_spawn)
             end
         end
@@ -268,10 +287,10 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
         if dungeon_data.rooms[y] then
             for _, room in ipairs(dungeon_data.rooms[y]) do
                 local entity_groups = table.copy(randungeon.entity_groups)
-                local room_tiles_min = 36
+                local room_tiles_min = 6 * 6
                 local room_tiles_real = (room.p2.x-room.p1.x-1) * (room.p2.z-room.p1.z-1)
                 local max_entities = math.floor(room_tiles_real / room_tiles_min * 5 * (1 + 0.5 * math.random()))
-                local max_level = math.floor(room_tiles_real / room_tiles_min * 5 * room.level)
+                local max_level = math.floor(max_entities * room.level)
                 local room_entities_in_groups = {}
                 while #entity_groups > 0 do
                     local i = math.random(1, #entity_groups)
@@ -289,7 +308,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     -- decide which entities from which group will fill the room
                     if math.random() <= 1 / group_is_underpowered and not unfit_for_rooms then
                         local entity_group = table.remove(entity_groups, i)
-                        local max_entities, max_level = fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
+                        max_entities, max_level = fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
                         if max_entities == false then
                             break
                         end
@@ -339,3 +358,134 @@ minetest.register_globalstep(function(dtime)
         end
     end
 end)
+
+-- chat commands to clear out dungeon & repopulate them
+
+local function do_thing_with_player_dungeon_corner_points(player, f)
+    if player then
+        local pos = player:get_pos()
+        pos.y = math.floor(pos.y)
+        for _, dungeon_data in pairs(randungeon.dungeons) do
+            if dungeon_data.p1.x <= pos.x and dungeon_data.p2.x >= pos.x
+            and dungeon_data.p1.z <= pos.z and dungeon_data.p2.z >= pos.z
+            and pos.y < dungeon_data.p2.y and pos.y >= dungeon_data.p1.y then
+                local p1 = {x=dungeon_data.p1.x-35, y=dungeon_data.p1.y, z=dungeon_data.p1.z-35}
+                local p2 = {x=dungeon_data.p2.x+35, y=dungeon_data.p2.y, z=dungeon_data.p2.z+35}
+	            minetest.load_area(p1, p2)
+                f(p1, p2, dungeon_data)
+                dungeon_data.lowest_explored_y = p1.y-60 -- set the dungeon to fully explored so the resulting dungeon doesn't get changed by new entities spawning
+                return true
+            end
+        end
+    end
+end
+
+local function delete_entities_between_points(p1, p2)
+    local objs = minetest.get_objects_in_area(p1, p2)
+    for _, obj in ipairs(objs) do
+        local ent = obj:get_luaentity()
+        if ent and (randungeon.entity_levels[ent.name] or ent.name == "__builtin:item") then
+            obj:remove()
+        end
+    end
+end
+
+local function respawn_entities_between_points(p1, p2, dungeon_data)
+    delete_entities_between_points(p1, p2)
+    spawn_entities(p1, p2, dungeon_data)
+    randungeon.create_spawning_debug_html(dungeon_data)
+end
+
+local function rewrite_entity_logs_between_points(p1, p2, dungeon_data)
+    randungeon.create_spawning_debug_html(dungeon_data)
+end
+
+local function light_air_between_points(p1, p2)
+    for x = p1.x, p2.x do
+        for y = p1.y, p2.y do
+            for z = p1.z, p2.z do
+                local p = {x=x, y=y, z=z}
+                if minetest.get_node(p).name == "air" then
+                    minetest.set_node(p, {name="randungeon:air_glowing"})
+                end
+            end
+        end
+    end
+end
+
+local function unlight_air_between_points(p1, p2)
+    for x = p1.x, p2.x do
+        for y = p1.y, p2.y do
+            for z = p1.z, p2.z do
+                local p = {x=x, y=y, z=z}
+                if minetest.get_node(p).name == "randungeon:air_glowing" then
+                    minetest.set_node(p, {name="air"})
+                end
+            end
+        end
+    end
+end
+
+minetest.register_chatcommand("randungeon:clear_dungeon", {
+    params = "",
+    description = "removes all entities from the dungeon that one is currently in.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        minetest.chat_send_player(name, "Starting the clearing process...")
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, delete_entities_between_points)
+        if finished_execution then
+            minetest.chat_send_player(name, "Removed all spawnable entities from dungeon.")
+        else
+            minetest.chat_send_player(name, "Couldn't remove entities bc you aren't in a dungeon right now.")
+        end
+    end
+})
+
+minetest.register_chatcommand("randungeon:populate_dungeon", {
+    params = "",
+    description = "re-spawns entities for the entire dungeon.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        minetest.chat_send_player(name, "Starting the re-spawning process...")
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, respawn_entities_between_points)
+        minetest.chat_send_player(name, "(Removed if needed) and re-spawned all entities.")
+    end
+})
+
+minetest.register_chatcommand("randungeon:rewrite_spawn_log", {
+    params = "",
+    description = "(re-)writes the html spawn log for all the entities spawned in this dungeon.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        minetest.chat_send_player(name, "Starting the re-writing process...")
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, rewrite_entity_logs_between_points)
+        minetest.chat_send_player(name, "Rewrote entity spawn logs.")
+    end
+})
+
+minetest.register_chatcommand("randungeon:light_dungeon", {
+    params = "",
+    description = "lights dungeon up by turning air blocks into luminescent air blocks.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        minetest.chat_send_player(name, "Starting the lighting process...")
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, light_air_between_points)
+        minetest.chat_send_player(name, "Turned on the light.")
+    end
+})
+
+minetest.register_chatcommand("randungeon:unlight_dungeon", {
+    params = "",
+    description = "unlights dungeon up by turning randungeon's flowing air blocks into regular air blocks.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        minetest.chat_send_player(name, "Starting the unlighting process...")
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, unlight_air_between_points)
+        minetest.chat_send_player(name, "Turned off the light.")
+    end
+})
