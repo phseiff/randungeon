@@ -867,8 +867,8 @@ local function make_dungeon_once_generated(blockpos, action, calls_remaining, pa
 	if calls_remaining > 0 then
 		return
 	end
-	local pos1 = {x=pos.x-30, y=pos.y, z=pos.z-30}
-	local pos2 = {x=pos.x+width*10+30, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-17, z=pos.z+width*10+30}
+	local pos1 = {x=pos.x-60, y=pos.y+150, z=pos.z-60}
+	local pos2 = {x=pos.x+width*10+60, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-60, z=pos.z+width*10+60}
 	minetest.load_area(pos1, pos2)
 	-- print("dungeon build area generated.")
 	randungeon_make_dungeon_function_container[1](pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, bridge_type, dungeon_deph, rim_sealed,
@@ -886,9 +886,9 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		print("dungeon with id " .. tostring(dungeon_id) .. " already build; aborting.")
 		return
 	end
-	local pos1 = {x=pos.x-30, y=pos.y, z=pos.z-30}
-	local pos2 = {x=pos.x+width*10+30, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-17, z=pos.z+width*10+30}
-	local forceloaded_area = make_forceload(pos, width * 10, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)
+	local pos1 = {x=pos.x-60, y=pos.y+150, z=pos.z-60}
+	local pos2 = {x=pos.x+width*10+60, y=pos.y-(dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)-60, z=pos.z+width*10+60}
+	local forceloaded_area = {} -- make_forceload(pos, width * 10, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph)
 	minetest.load_area(pos1, pos2)
 	if not is_loaded_and_generated(pos, width * 10, dungeon_top_deph + dungeon_bottom_deph + (dungeon_levels - 1) * dungeon_deph) then
 		minetest.emerge_area(

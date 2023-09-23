@@ -30,6 +30,9 @@ randungeon.cave_entity_spawnblocks = {}
 randungeon.entity_required_surroundings = {}
 randungeon.entity_groups = {}
 
+randungeon.max_level_of_group_underpowerdness = 4
+randungeon.max_entities_per_cave = 13
+
 local BUFFER_SIZE = 10
 local SPAWN_CHECK_INTERVAL = 10
 
@@ -98,7 +101,7 @@ local function fill_room_or_cave_with_entity_group(room, entity_group, room_enti
                 end
             end
             -- if entity is too powerful or too much or its surroundings are unfitting, remove it from the copy of the group we operate on for this room
-            if randungeon.entity_levels[potential_entity] > math.min(max_level, max_level_in_room) or not required_surroundings_fulfilled then
+            if (randungeon.entity_levels[potential_entity] > math.min(max_level, max_level_in_room)) or not required_surroundings_fulfilled then
                 table.remove(entity_group.entities, potential_entity_index)
             else
                 -- otherwise, add it
@@ -127,7 +130,7 @@ local function group_is_underpowered(room, entity_group)
             end
         end
     end
-    return room.level - strongest_non_op_entity_level + 1
+    return math.max(randungeon.max_level_of_group_underpowerdness, room.level - strongest_non_op_entity_level + 1)
 end
 
 
@@ -140,7 +143,9 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
         end
     end
     -- save that we spawned these entities in this group
-    room.spawned_entities = room_entities_in_groups
+    if actually_spawn then
+        room.spawned_entities = room_entities_in_groups
+    end
     -- put all room entities into a single list
     local room_entities = {}
     for _, group in ipairs(room_entities_in_groups) do
@@ -182,9 +187,17 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             -- remove every spawn position if mob doesn't fit there, would float, or adjust spawn position based on mob collissionbox
             for i = #valid_spawnpositions, 1, -1 do
                 local spawnp = valid_spawnpositions[i]
-                local node_under_is_walkable = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name].walkable
+                local ndef_under = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name]
+                local node_under_is_walkable = ndef_under and ndef_under.walkable
                 if not node_under_is_walkable then
                     table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
+                elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
+                    local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)
+                    if not modified_spawn_pos then
+                        table.remove(valid_spawnpositions, i) -- <- remove bc randungeon_monsters says this position isn't valid
+                    else
+                        valid_spawnpositions[i] = modified_spawn_pos
+                    end
                 elseif minetest.get_modpath("mobs") and not minetest.registered_items[entity_name] then
                     local modified_spawn_pos = mobs:can_spawn(spawnp, entity_name)
                     if not modified_spawn_pos then
@@ -226,7 +239,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 table.insert(spawned_entities, entity_name)
                 if actually_spawn then
                     if minetest.registered_entities[entity_name] then
-                        minetest.add_entity(chosen_spawn_pos, entity_name)
+                        minetest.add_entity(chosen_spawn_pos, entity_name, minetest.serialize({naturally_spawned=true}))
                     elseif minetest.registered_items[entity_name] then
                         local item_obj = minetest.add_item(chosen_spawn_pos, entity_name)
                         item_obj:get_luaentity().immortal_item = true
@@ -252,7 +265,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
             for _, cave in ipairs(dungeon_data.bubble_caves[y]) do
                 local entity_groups = table.copy(randungeon.entity_groups)
                 local cave_tiles = math.pi * cave.radius^2
-                local max_entities = cave_tiles / (5^2)
+                local max_entities = math.min(randungeon.max_entities_per_cave, cave_tiles / (7^2))
                 local max_level = math.floor(max_entities * cave.level)
                 local cave_entities_in_groups = {}
                 while #entity_groups > 0 do
@@ -272,7 +285,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     if math.random() <= 1 / group_is_underpowered and not unfit_for_caves then
                         local entity_group = table.remove(entity_groups, i)
                         max_entities, max_level = fill_room_or_cave_with_entity_group(cave, entity_group, cave_entities_in_groups, max_entities, max_level)
-                        if max_entities == false then
+                        if max_entities == false or max_entities <= 0 then
                             break
                         end
                     elseif unfit_for_caves then
@@ -309,7 +322,7 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
                     if math.random() <= 1 / group_is_underpowered and not unfit_for_rooms then
                         local entity_group = table.remove(entity_groups, i)
                         max_entities, max_level = fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
-                        if max_entities == false then
+                        if max_entities == false or max_entities <= 0 then
                             break
                         end
                     elseif unfit_for_rooms then

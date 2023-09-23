@@ -42,6 +42,14 @@ local function is_even(a)
 	return a - (math.floor(a/2)*2) == 0
 end
 
+local function randomize_list(list)
+	local list_new = {}
+	while #list > 0 do
+		table.insert(list_new, table.remove(list, math.random(1, #list)))
+	end
+	return list_new
+end
+
 local stone_ground_blocks = {
 	"default:desert_sandstone", "default:desert_sandstone_block", "default:desert_sandstone_brick",
 	"default:desert_cobble", "default:desert_stone", "default:desert_stone_block", "default:desert_stonebrick",
@@ -113,6 +121,7 @@ local helper_functions = {
     bool_to_number = bool_to_number,
 	number_to_bool = number_to_bool,
 	is_even = is_even,
+	randomize_list = randomize_list,
 	get_solid_air_block_replacement = get_solid_air_block_replacement,
 	is_in_frozen_biome = is_in_frozen_biome
 }

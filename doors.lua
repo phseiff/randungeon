@@ -173,7 +173,7 @@ for _, material in ipairs(available_materials) do
             new_node[key] = attr
         end
         -- copy groups & add not_in_creative_inventory
-        new_node.groups = {not_in_creative_inventory = 1}
+        new_node.groups = {not_in_creative_inventory = 1, randungeon_doorframe = 1}
         for group, value in pairs(node.groups) do
             new_node.groups[group] = value
         end
@@ -283,11 +283,10 @@ for _, material in ipairs(woods) do
                 new_node[key] = value
             end
             -- copy groups & add not_in_creative_inventory
-            new_node.groups = {not_in_creative_inventory = 1}
+            new_node.groups = {not_in_creative_inventory = 1, randungeon_door = 1}
             for group, value in pairs(node.groups) do
                 new_node.groups[group] = value
             end
-            new_node.groups.randungeon_door = 1
 
             -- drawtypes & stuff:
             new_node.paramtype = "light"

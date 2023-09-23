@@ -197,6 +197,8 @@ minetest.register_node("randungeon:dungeon_treasure", {
 
 -- DUNGEON WATER
 
+local greenish_water_filter = "^[multiply:#38462d" -- #78866b ^2
+
 -- special water source that only flows one block far
 local dungeon_water_source = table.copy(minetest.registered_nodes["default:water_source"])
 dungeon_water_source.liquid_alternative_flowing = "randungeon:water_flowing"
@@ -204,6 +206,12 @@ dungeon_water_source.liquid_alternative_source = "randungeon:water_source"
 dungeon_water_source.liquid_range = 1
 dungeon_water_source.description = "Water Source (with 1-block-range flow limit)\n(becomes normal water with bucket)"
 dungeon_water_source.groups.not_in_creative_inventory = 1
+
+if minetest.settings:get_bool("randungeon_greenish_swamp_water") ~= false then
+	print("bark !!")
+	dungeon_water_source.tiles[1].name = dungeon_water_source.tiles[1].name .. greenish_water_filter
+	dungeon_water_source.tiles[2].name = dungeon_water_source.tiles[2].name .. greenish_water_filter
+end
 minetest.register_node("randungeon:water_source", dungeon_water_source)
 
 -- flowing version of it
@@ -212,6 +220,14 @@ dungeon_water_flowing.liquid_alternative_flowing = "randungeon:water_flowing"
 dungeon_water_flowing.liquid_alternative_source = "randungeon:water_source"
 dungeon_water_flowing.liquid_range = 1
 dungeon_water_flowing.groups.flowing_water = 1
+
+if minetest.settings:get_bool("randungeon_greenish_swamp_water") ~= false then
+	print("bark !!")
+	dungeon_water_flowing.special_tiles[1].name = dungeon_water_flowing.special_tiles[1].name .. greenish_water_filter
+	dungeon_water_flowing.special_tiles[2].name = dungeon_water_flowing.special_tiles[2].name .. greenish_water_filter
+	dungeon_water_flowing.tiles[1] = dungeon_water_flowing.tiles[1] .. greenish_water_filter
+end
+
 minetest.register_node("randungeon:water_flowing", dungeon_water_flowing)
 
 -- make it so it gives a normal water bucket when collected via bucket

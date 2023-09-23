@@ -14,3 +14,7 @@ randungeon_worlds_with_nat_dungeon_generation_disabled  (Worlds for which dungeo
 #    For every 200x200 block wide chunk of the world there is a chance that a dungeon will be generated in it.
 #    This chance can be modified with this option. Must be larger than 0 and not more than 100, since it's in percent.
 randungeon_dungeon_chance  (Chance for a dungeon to be generated per 200x200 block area in percent) float 10 0 100
+
+#    Give swamp water (the water that can be found in swampy cave biomes) a greenish hue.
+#    This makes it more aesthetic, but might be confusing since collecting it in a bucket yields normal non-green water.
+randungeon_greenish_swamp_water (gives water that generates in randungeon's swampy cave biomes a greenish hue) bool true

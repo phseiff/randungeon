@@ -39,6 +39,14 @@ local function cave_or_room_to_string(cave_or_room, entity_quantity, entity_quan
     return text
 end
 
+randungeon.mods_whose_items_and_entities_need_to_occur_inside_the_dungeon = {
+    "example_mod",
+    "example_mod2"
+}
+randungeon.items_and_entities_that_dont_need_to_occur_inside_the_dungeon = {
+    ["example:item"] = true
+}
+
 function randungeon.create_spawning_debug_html(dungeon_data)
     local entity_quantity = {}
     local entity_quantity_caves = {}
@@ -46,7 +54,69 @@ function randungeon.create_spawning_debug_html(dungeon_data)
     local p = dungeon_data.pos
     local file = io.open(minetest.get_worldpath().."/entity_spawn_log_" .. tostring(p.x) .. "," .. tostring(p.y) .. "," .. tostring(p.z) .. ".html", "w")
     local level = 0
-    local text = "<style>.container {display: flex; flex-direction: row; flex-wrap: wrap}\
+    local text = ""
+    text = text .. "<h1>All entities ranked by their level</h1>---<br/>"
+    local levels = {}
+    local max_entity_level = 0
+    for entity_name, entity_level in pairs(randungeon.entity_levels) do
+        if minetest.registered_entities[entity_name] then
+            max_entity_level = math.max(max_entity_level, entity_level)
+            local modified_entity_name = string.split(entity_name, ":")[2]
+            if not levels[entity_level] then
+                levels[entity_level] = {modified_entity_name}
+            else
+                table.insert(levels[entity_level], modified_entity_name)
+            end
+        end
+    end
+    for entity_level = 1, max_entity_level do
+        text = text .. entity_level .. ": "
+        if levels[entity_level] then
+            text = text .. table.concat(levels[entity_level], ", ")
+        end
+        text = text .. "<br/>"
+    end
+    text = text .. "<h1>Things we'd need to spawn that aren't in the spawn tables</h1>---<br/>"
+    local list_of_all_content_we_spawn = {}
+    local already_added = {}
+    for _, entity_group in ipairs(randungeon.entity_groups) do
+        for _, entity_name in ipairs(entity_group.entities) do
+            if not already_added[entity_name] then
+                already_added[entity_name] = true
+                table.insert(list_of_all_content_we_spawn, entity_name)
+            end
+        end
+    end
+    local list_of_all_content_we_need_to_spawn = {}
+    for item_name, item_def in pairs(minetest.registered_craftitems) do
+        for _, mod_name in ipairs(randungeon.mods_whose_items_and_entities_need_to_occur_inside_the_dungeon) do
+            if item_def.mod_origin == mod_name and not already_added[item_name]
+            and not randungeon.items_and_entities_that_dont_need_to_occur_inside_the_dungeon[item_name] then
+                table.insert(list_of_all_content_we_need_to_spawn, item_name)
+            end
+        end
+    end
+    for item_name, item_def in pairs(minetest.registered_tools) do
+        for _, mod_name in ipairs(randungeon.mods_whose_items_and_entities_need_to_occur_inside_the_dungeon) do
+            if item_def.mod_origin == mod_name and not already_added[item_name]
+            and not randungeon.items_and_entities_that_dont_need_to_occur_inside_the_dungeon[item_name] then
+                table.insert(list_of_all_content_we_need_to_spawn, item_name)
+            end
+        end
+    end
+    for item_name, item_def in pairs(minetest.registered_entities) do
+        for _, mod_name in ipairs(randungeon.mods_whose_items_and_entities_need_to_occur_inside_the_dungeon) do
+            if item_def.mod_origin == mod_name and not already_added[item_name]
+            and not randungeon.items_and_entities_that_dont_need_to_occur_inside_the_dungeon[item_name] then
+                table.insert(list_of_all_content_we_need_to_spawn, item_name)
+            end
+        end
+    end
+    for _, item_name in ipairs(list_of_all_content_we_need_to_spawn) do
+        text = text .. item_name .. "<br/>"
+    end
+    text = text .. "<h1>Room & Cave Report</h1>"
+    text = text .. "<style>.container {display: flex; flex-direction: row; flex-wrap: wrap}\
     .cave {padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;\
     margin-top: 10px; margin-right: 10px; margin-bottom: 10px; margin-left: 10px}</style>"
     text = text .. "<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js'></script>"
