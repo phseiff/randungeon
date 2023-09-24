@@ -694,19 +694,39 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 		if not minetest.find_node_near(bubble_pos, bubble_radius+1, {"air", "group:liquid"}) then
 			-- choose what to fill bubbles with
 			local material
+			local cave_floor_flattened
 			local rand_num = math.random()
 			if rand_num < 0.25 then
 				material = "default:lava_source"
+				cave_floor_flattened = math.random() < 0.25
 			elseif rand_num < 0.6 then
 				material = "default:water_source"
+				cave_floor_flattened = math.random() < 0.4
 			else
 				material = "air"
+				cave_floor_flattened = math.random() < 0.65
 			end
 			-- decide how high the liquid should go, if it is one
 			local pegel = false
 			if material ~= "air" then
 				if math.random() < 0.7 then
 					pegel = math.random()
+				end
+			end
+			local exact_fill_height_relative_to_pos = bubble_pos.y - bubble_radius* 2 -- <-- set this to below the bubble ground by default
+			if pegel then
+				exact_fill_height_relative_to_pos = -bubble_radius + 2 * bubble_radius * pegel
+			end
+			exact_fill_height_relative_to_pos = pegel and -bubble_radius + 2 * bubble_radius * pegel
+			-- decide how much to flatten the floor, if applicable
+			local cave_floor_height = bubble_pos.y - bubble_radius* 2 -- <-- set this to below the bubble ground by default
+			if cave_floor_flattened then
+				min_floor_y = bubble_pos.y - bubble_radius - 1
+				max_floor_y = math.min(bubble_pos.y, bubble_pos.y + (pegel and exact_fill_height_relative_to_pos or 0))
+				if material == "air" and math.random() <= 1/3 then
+					cave_floor_height = max_floor_y
+				else
+					cave_floor_height = math.random(min_floor_y, max_floor_y)
 				end
 			end
 			-- decide if we'll add nature to the bubble
@@ -723,6 +743,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			end
 			table.insert(bubble_cave_data[highest_y_value], {
 				center_pos = bubble_pos,
+				cave_floor = cave_floor_height,
 				radius = bubble_radius,
 				type = material,
 				frozen = false, -- <- this gets corrected later when necessary
@@ -736,16 +757,16 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			for x = -bubble_radius, bubble_radius do
 				for y = -bubble_radius, bubble_radius do
 					for z = -bubble_radius, bubble_radius do
-						if (x^2 + y^2 + z^2) ^ 0.5 <= bubble_radius then
+						if (x^2 + y^2 + z^2) ^ 0.5 <= bubble_radius and bubble_pos.y+y >= cave_floor_height then
 							local new_block_pos = {x=bubble_pos.x+x, y=bubble_pos.y+y, z=bubble_pos.z+z}
-							if (not pegel) or y < -bubble_radius + 2 * bubble_radius * pegel then
+							if (not pegel) or y < exact_fill_height_relative_to_pos then
 								minetest.set_node(new_block_pos, {name=material})
 							else
 								minetest.set_node(new_block_pos, {name="air"})
 							end
 							needed_new_air_blocks = needed_new_air_blocks - 1
 							-- make nature if needed and we're at the ground of a bubble
-							if nature and (x^2 + (y-1)^2 + z^2) ^ 0.5 > bubble_radius then
+							if nature and ((x^2 + (y-1)^2 + z^2) ^ 0.5 > bubble_radius or bubble_pos.y+y == cave_floor_height) then
 								minetest.set_node(new_block_pos, {name=nature})
 								minetest.get_meta(new_block_pos):from_table(nature_metadata)
 								-- find out if any nature blocks are outside the area we will green later (after the corridors are set):

@@ -175,7 +175,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             if room.p1 then
                 valid_spawnpositions = minetest.find_nodes_in_area({x=room.p1.x, y=room.p1.y-pool_deph+1, z=room.p1.z}, room.p2, valid_spawnblocks)
             elseif room.center_pos then
-                local p1 = {x=room.center_pos.x-room.radius, y=room.center_pos.y-room.radius, z=room.center_pos.z-room.radius}
+                local p1 = {x=room.center_pos.x-room.radius, y=room.cave_floor or (room.center_pos.y-room.radius), z=room.center_pos.z-room.radius}
                 local p2 = {x=room.center_pos.x+room.radius, y=room.center_pos.y+room.radius, z=room.center_pos.z+room.radius}
                 valid_spawnpositions = minetest.find_nodes_in_area(p1, p2, valid_spawnblocks)
                 for i = #valid_spawnpositions, 1, -1 do

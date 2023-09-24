@@ -12,7 +12,7 @@ randungeon.dungeons = {
                     {
                          center_pos = _,
                          radius = _,
-                         lower_y_cutoff = _(if the cave is flattened at the bottom, this is the y height of the flattening),
+                         cave_floor = _(if the cave is flattened at the bottom, this is the y height of the flattening),
                          type = _(one of default:lava_source, default:water_source, and air),
                          nature = _(false or name of the nature block),
                          fill_height = false if n/a or a percentage if filled to a certain point with lava or water,
