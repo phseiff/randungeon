@@ -58,6 +58,13 @@ local function make_glowstick(pos)
     minetest.set_node(pos, {name=mese_lamp_type})
 end
 
+local function place_node_if_possible(pos, nname)
+    local block = minetest.get_node(pos).name
+    if is_air(block) then
+        minetest.set_node(pos, {name=nname, param2=math.random(0, 3)})
+    end
+end
+
 local function make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
     local neighbors = {
         {x=pos.x, y=pos.y, z=pos.z-1},
@@ -87,10 +94,7 @@ local function make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
         end
         -- water lily
         if math.random() < chance_for_water_lilies_on_seed_based_ponds then
-            local block = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
-            if is_air(block) then
-                minetest.set_node({x=pos.x, y=pos.y+1, z=pos.z}, {name="flowers:waterlily_waving", param2=math.random(0, 3)})
-            end
+            place_node_if_possible({x=pos.x, y=pos.y+1, z=pos.z}, "flowers:waterlily_waving")
         end
         return true
     end
@@ -136,6 +140,13 @@ for every pos where a randungeon:pretty_forest is:
     make_nature(pos)
 --]]
 
+randungeon.flowers = {
+    "flowers:rose", "flowers:tulip", "flowers:viola", "flowers:geranium",
+    "flowers:tulip_black", "flowers:chrysanthemum_green", "flowers:dandelion_yellow", "flowers:dandelion_white"
+}
+randungeon.frost_cave_decor = {}
+randungeon.non_frost_cave_decor = {}
+
 local function make_metadata_for_pretty_forest(pos, cave_or_room_data)
     local water_lilies = false
     if math.random() < 0.5 then
@@ -165,12 +176,26 @@ local function make_metadata_for_pretty_forest(pos, cave_or_room_data)
     if (grasses and rand < 0.35) or (ferns and rand < 0.75) then
         mushrooms = true
     end
+    -- ore ponds
     local block_to_turn_into_ponds = ""
     local block_to_turn_into_ponds2 = ""
-    if math.random() < 1/2.6 then
-        local ore_types = {
-            "default:stone_with_coal", "default:stone_with_iron", "default:stone_with_copper", "default:stone_with_tin"}--,
-            --"default:stone_with_gold", "default:stone_with_mese", "default:stone_with_diamond", "default:dirt"}
+    local do_instead_of_ore_ponds = ""
+    if math.random() < 1/1.7 then
+        -- decide what (if anyhthing) to do instead of ore ponds
+        local rnd = math.random()
+        local appropriate_extra_decor = cave_or_room_data.frozen and randungeon.frost_cave_decor or randungeon.non_frost_cave_decor
+        if rnd < 1/3 then
+            do_instead_of_ore_ponds = ""
+        elseif rnd < 2/3 or (#appropriate_extra_decor == 0) then
+            do_instead_of_ore_ponds = randungeon.flowers[math.random(1, #randungeon.flowers)]
+            while math.random() < 1/2 do
+                do_instead_of_ore_ponds = do_instead_of_ore_ponds .. " " .. randungeon.flowers[math.random(1, #randungeon.flowers)]
+            end
+        else
+            do_instead_of_ore_ponds = appropriate_extra_decor[math.random(1, #appropriate_extra_decor)]
+        end
+        -- decide what ore type to turn into ponds
+        local ore_types = {"default:stone_with_coal", "default:stone_with_iron", "default:stone_with_copper", "default:stone_with_tin"}
         block_to_turn_into_ponds = table.remove(ore_types, math.random(1, #ore_types))
         if math.random() > 2/3 then
             block_to_turn_into_ponds2 = ore_types[math.random(1, #ore_types)]
@@ -190,7 +215,8 @@ local function make_metadata_for_pretty_forest(pos, cave_or_room_data)
         block_to_turn_into_ponds=block_to_turn_into_ponds,
         block_to_turn_into_ponds2=block_to_turn_into_ponds2,
         add_seed_based_ponds=tostring(add_seed_based_ponds),
-        water_lilies_on_seed_based_ponds = tostring(water_lilies_on_seed_based_ponds)
+        water_lilies_on_seed_based_ponds = tostring(water_lilies_on_seed_based_ponds),
+        do_instead_of_ore_ponds=do_instead_of_ore_ponds
     }}
 end
 
@@ -212,6 +238,7 @@ local function make_pretty_forest(pos)
     local block_to_turn_into_ponds2 = metadata.block_to_turn_into_ponds2 or ""
     local add_seed_based_ponds = minetest.is_yes(metadata.add_seed_based_ponds)
     local chance_for_water_lilies_on_seed_based_ponds = minetest.is_yes(metadata.water_lilies_on_seed_based_ponds) and (math.random() * 1/9) or 0
+    local do_instead_of_ore_ponds = metadata.do_instead_of_ore_ponds or ""
 
     local node_above = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
     local node_below = minetest.get_node({x=pos.x, y=pos.y-1, z=pos.z}).name
@@ -228,7 +255,13 @@ local function make_pretty_forest(pos)
     if add_seed_based_ponds and randungeon.pond_noise:get_3d(pos) > 0 then
         made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
     elseif node_below == block_to_turn_into_ponds or node_below == block_to_turn_into_ponds2 then
-        made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
+        if do_instead_of_ore_ponds == "" then
+            made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
+        else
+            print("decopos: " .. minetest.pos_to_string(pos))
+            decorations = string.split(do_instead_of_ore_ponds, " ")
+            place_node_if_possible({x=pos.x, y=pos.y+1, z=pos.z}, decorations[math.random(1, #decorations)])
+        end
     end
     if made_pond then
         do end
