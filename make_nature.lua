@@ -570,7 +570,7 @@ local function make_nature_in_area(area_border1, area_border2)
 end
 
 local function make_metadata_for_nature(pos, nature_type, cave_or_room_data)
-    return randungeon.nature_types[nature_type].make_metadata(pos, cave_or_room_data)
+    return randungeon.nature_types[nature_type].make_metadata(pos, cave_or_room_data or {})
 end
 
 randungeon.nature_functions.get_random_cave_nature_type = get_random_cave_nature_type

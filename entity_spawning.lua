@@ -189,7 +189,22 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 local spawnp = valid_spawnpositions[i]
                 local ndef_under = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name]
                 local node_under_is_walkable = ndef_under and ndef_under.walkable
-                if not node_under_is_walkable then
+                local removed_due_to_missing_los = false
+                if room.center_pos then
+                    -- don't let the entity spawn in a bubble cave if there is natural stone or corridors separating it from the cave's center
+                    -- trees, leaves, dirt and other vegetation notably does not count as separation! and glass doesn't either, for funsies
+                    local ray = Raycast(room.center_pos, spawnp, false, false)
+                    for pointed_thing in ray do
+                        local nname = minetest.get_node(pointed_thing.under)
+                        if contains(randungeon.available_materials, nname) then
+                            table.remove(valid_spawnpositions, i)
+                            removed_due_to_missing_los = true
+                        end
+                    end
+                end
+                if removed_due_to_missing_los then
+                    do end
+                elseif not node_under_is_walkable then
                     table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
                 elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
                     local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)

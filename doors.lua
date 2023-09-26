@@ -25,6 +25,7 @@ local available_materials = {
 
     "randungeon:ceiling", "randungeon:wall_type_2", "randungeon:wall_type_1", "randungeon:floor", "randungeon:pillar"
 }
+randungeon.available_materials = available_materials
 
 local woods = {
     "default:acacia_wood", "default:acacia_wood", "default:wood", "default:aspen_wood", "default:junglewood", "default:pine_wood"
