@@ -721,36 +721,38 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			-- decide how much to flatten the floor, if applicable
 			local cave_floor_height = bubble_pos.y - bubble_radius* 2 -- <-- set this to below the bubble ground by default
 			if cave_floor_flattened then
-				min_floor_y = bubble_pos.y - bubble_radius - 1
-				max_floor_y = math.min(bubble_pos.y, bubble_pos.y + (pegel and exact_fill_height_relative_to_pos or 0))
+				local min_floor_y = bubble_pos.y - bubble_radius - 1
+				local max_floor_y = math.min(bubble_pos.y, bubble_pos.y + (pegel and exact_fill_height_relative_to_pos or 0))
 				if material == "air" and math.random() <= 1/3 then
 					cave_floor_height = max_floor_y
 				else
 					cave_floor_height = math.random(min_floor_y, max_floor_y)
 				end
 			end
-			-- decide if we'll add nature to the bubble
-			local nature = false
-			local nature_metadata = {}
-			if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
-				nature = get_random_cave_nature_type()
-				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature)
-			end
-			-- fill randungeon.dungeons data structure with info on our cave
-			local highest_y_value = bubble_pos.y + bubble_radius
-			if not bubble_cave_data[highest_y_value] then
-				bubble_cave_data[highest_y_value] = {}
-			end
-			table.insert(bubble_cave_data[highest_y_value], {
+			-- define how cave data looks so far
+			local cave_data_so_far = {
 				center_pos = bubble_pos,
 				cave_floor = cave_floor_height,
 				radius = bubble_radius,
 				type = material,
 				frozen = false, -- <- this gets corrected later when necessary
 				nature = nature,
-				fill_height = pegel,
-				nature_metadata = nature_metadata.fields
-			})
+				fill_height = pegel
+			}
+			-- decide if we'll add nature to the bubble
+			local nature = false
+			local nature_metadata = {}
+			if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
+				nature = get_random_cave_nature_type()
+				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature, cave_data_so_far)
+			end
+			cave_data_so_far.nature_metadata = nature_metadata.fields
+			-- fill randungeon.dungeons data structure with info on our cave
+			local highest_y_value = bubble_pos.y + bubble_radius
+			if not bubble_cave_data[highest_y_value] then
+				bubble_cave_data[highest_y_value] = {}
+			end
+			table.insert(bubble_cave_data[highest_y_value], cave_data_so_far)
 			-- build bubble cave
 			fruitless_attempts = 0
 			local nature_blocks_to_grow_directly = {}
@@ -935,6 +937,9 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		staircases = {}
 	}
 	local this_dungeon = randungeon.dungeons[dungeon_name]
+
+	-- initialize perlin noise for different use cases
+	randungeon.initialize_perlin()
 
 	-- make bubbly caves
 	if not cave_percentage then

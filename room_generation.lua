@@ -555,7 +555,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 		elseif math.random() <= 1/30 then
 			pool_content = get_random_pool_nature_type()
             emergency_pool_bassin = randungeon.nature_types[pool_content].pool_bassin or "default:silver_sandstone_block"
-			pool_content_metadata = make_metadata_for_nature(room_corner_1, pool_content)
+			pool_content_metadata = make_metadata_for_nature(room_corner_1, pool_content, {})
         elseif math.random() < 2/3 then
             pool_content = "default:river_water_source"
             emergency_pool_bassin = "default:silver_sandstone_block"

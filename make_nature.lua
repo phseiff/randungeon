@@ -37,7 +37,7 @@ local function make_waterlilie(pos)
         if is_air(block) then
             minetest.set_node({x=pos.x, y=pos.y+y, z=pos.z}, {name="flowers:waterlily_waving", param2=math.random(0, 3)})
         end
-        if block ~= "default:water_source" and block ~= "randungeon:water_source" then
+        if block ~= "default:water_source" and block ~= "randungeon:water_source" and block ~= "default:river_water_source" then
             break
         end
     end
@@ -58,7 +58,64 @@ local function make_glowstick(pos)
     minetest.set_node(pos, {name=mese_lamp_type})
 end
 
+local function make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
+    local neighbors = {
+        {x=pos.x, y=pos.y, z=pos.z-1},
+        {x=pos.x, y=pos.y, z=pos.z+1},
+        {x=pos.x-1, y=pos.y, z=pos.z},
+        {x=pos.x+1, y=pos.y, z=pos.z}
+    }
+    local all_solid = true
+    for _, p in ipairs(neighbors) do
+        local nname = minetest.get_node(p).name
+        local ndef = minetest.registered_nodes[nname]
+        if ndef and ndef.walkable == false and nname ~= "default:river_water_source" then
+            all_solid = false
+            break
+        end
+    end
+    if all_solid then
+        -- pond water
+        minetest.set_node(pos, {name="default:river_water_source"})
+        -- pond ground
+        if math.random() < 0.9 then
+            if math.random() < 0.5 then
+                minetest.set_node({x=pos.x, y=pos.y-1, z=pos.z}, {name="default:sand"})
+            else
+                minetest.set_node({x=pos.x, y=pos.y-1, z=pos.z}, {name="default:clay"})
+            end
+        end
+        -- water lily
+        if math.random() < chance_for_water_lilies_on_seed_based_ponds then
+            local block = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
+            if is_air(block) then
+                minetest.set_node({x=pos.x, y=pos.y+1, z=pos.z}, {name="flowers:waterlily_waving", param2=math.random(0, 3)})
+            end
+        end
+        return true
+    end
+end
+
 local TESTING_CAVES = false
+
+
+--
+-- types of noise
+--
+
+local pond_noise_definition = {
+    offset = -0.35,
+    scale = 1,
+    spread = {x = 11, y = 11, z = 11},
+    seed = 1312,
+    octaves = 2,
+    persistence = 0.3,
+    lacunarity = 3.0,
+}
+
+randungeon.initialize_perlin = function()
+    randungeon.pond_noise = minetest.get_perlin(pond_noise_definition)
+end
 
 --
 -- define types of nature
@@ -79,7 +136,7 @@ for every pos where a randungeon:pretty_forest is:
     make_nature(pos)
 --]]
 
-local function make_metadata_for_pretty_forest()
+local function make_metadata_for_pretty_forest(pos, cave_or_room_data)
     local water_lilies = false
     if math.random() < 0.5 then
         water_lilies = true
@@ -108,6 +165,19 @@ local function make_metadata_for_pretty_forest()
     if (grasses and rand < 0.35) or (ferns and rand < 0.75) then
         mushrooms = true
     end
+    local block_to_turn_into_ponds = ""
+    local block_to_turn_into_ponds2 = ""
+    if math.random() < 1/2.6 then
+        local ore_types = {
+            "default:stone_with_coal", "default:stone_with_iron", "default:stone_with_copper", "default:stone_with_tin"}--,
+            --"default:stone_with_gold", "default:stone_with_mese", "default:stone_with_diamond", "default:dirt"}
+        block_to_turn_into_ponds = table.remove(ore_types, math.random(1, #ore_types))
+        if math.random() > 2/3 then
+            block_to_turn_into_ponds2 = ore_types[math.random(1, #ore_types)]
+        end
+    end
+    local add_seed_based_ponds = math.random() < 1/2
+    local water_lilies_on_seed_based_ponds = (water_lilies and math.random() < 0.56) or (not water_lilies and math.random() < 0.2)
 
     return {fields = {
         water_lilies=tostring(water_lilies),
@@ -116,7 +186,11 @@ local function make_metadata_for_pretty_forest()
         can_have_apples=tostring(can_have_apples),
         grasses=tostring(grasses),
         ferns=tostring(ferns),
-        mushrooms=tostring(mushrooms)
+        mushrooms=tostring(mushrooms),
+        block_to_turn_into_ponds=block_to_turn_into_ponds,
+        block_to_turn_into_ponds2=block_to_turn_into_ponds2,
+        add_seed_based_ponds=tostring(add_seed_based_ponds),
+        water_lilies_on_seed_based_ponds = tostring(water_lilies_on_seed_based_ponds)
     }}
 end
 
@@ -134,8 +208,13 @@ local function make_pretty_forest(pos)
     local grasses = minetest.is_yes(metadata.grasses)
     local ferns = minetest.is_yes(metadata.ferns)
     local mushrooms = minetest.is_yes(metadata.mushrooms)
+    local block_to_turn_into_ponds = metadata.block_to_turn_into_ponds or ""
+    local block_to_turn_into_ponds2 = metadata.block_to_turn_into_ponds2 or ""
+    local add_seed_based_ponds = minetest.is_yes(metadata.add_seed_based_ponds)
+    local chance_for_water_lilies_on_seed_based_ponds = minetest.is_yes(metadata.water_lilies_on_seed_based_ponds) and (math.random() * 1/9) or 0
 
     local node_above = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
+    local node_below = minetest.get_node({x=pos.x, y=pos.y-1, z=pos.z}).name
 
     if TESTING_CAVES or mese_lamps_if_mese_lamps and minetest.find_node_near(pos, 20, {"default:meselamp"}) then
         mese_lamps = true
@@ -144,8 +223,18 @@ local function make_pretty_forest(pos)
     -- set dirt with grass (this'll be reverted if we are under water)
     minetest.set_node(pos, {name="default:dirt_with_grass"})
 
+    -- make ponds
+    local made_pond
+    if add_seed_based_ponds and randungeon.pond_noise:get_3d(pos) > 0 then
+        made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
+    elseif node_below == block_to_turn_into_ponds or node_below == block_to_turn_into_ponds2 then
+        made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
+    end
+    if made_pond then
+        do end
+
     -- set mese lamp posts
-    if math.random() < 1/25 and is_air(node_above) and mese_lamps then
+    elseif math.random() < 1/25 and is_air(node_above) and mese_lamps then
         make_glowstick({x=pos.x, y=pos.y+1, z=pos.z})
 
     -- set tree
@@ -189,7 +278,7 @@ minetest.register_node("randungeon:pretty_forest", {
 
 -- SWAMPY FOREST
 
-local function make_metadata_for_swampy_forest()
+local function make_metadata_for_swampy_forest(pos, cave_or_room_data)
 
     local water_lilies = false
     if math.random() < 0.65 then
@@ -220,7 +309,8 @@ local function make_metadata_for_swampy_forest()
         trees = true
     end
     local has_crater = false
-    if math.random() < 0.3 then
+    local has_flattened_floor = cave_or_room_data.cave_floor and (cave_or_room_data.cave_floor > cave_or_room_data.center_pos.y - cave_or_room_data.radius)
+    if (math.random() < 0.35 and not has_flattened_floor) or (math.random() < 0.08 and has_flattened_floor) then
         has_crater = true
     end
 
@@ -446,8 +536,8 @@ local function make_nature_in_area(area_border1, area_border2)
     end
 end
 
-local function make_metadata_for_nature(pos, nature_type)
-    return randungeon.nature_types[nature_type].make_metadata(pos)
+local function make_metadata_for_nature(pos, nature_type, cave_or_room_data)
+    return randungeon.nature_types[nature_type].make_metadata(pos, cave_or_room_data)
 end
 
 randungeon.nature_functions.get_random_cave_nature_type = get_random_cave_nature_type
