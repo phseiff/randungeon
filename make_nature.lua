@@ -108,7 +108,7 @@ local TESTING_CAVES = false
 --
 
 local pond_noise_definition = {
-    offset = -0.35,
+    offset = 0,
     scale = 1,
     spread = {x = 11, y = 11, z = 11},
     seed = 1312,
@@ -252,13 +252,12 @@ local function make_pretty_forest(pos)
 
     -- make ponds
     local made_pond
-    if add_seed_based_ponds and randungeon.pond_noise:get_3d(pos) > 0 then
+    if add_seed_based_ponds and randungeon.pond_noise:get_3d(pos) > 0.35 then
         made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
     elseif node_below == block_to_turn_into_ponds or node_below == block_to_turn_into_ponds2 then
         if do_instead_of_ore_ponds == "" then
             made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
         else
-            print("decopos: " .. minetest.pos_to_string(pos))
             decorations = string.split(do_instead_of_ore_ponds, " ")
             place_node_if_possible({x=pos.x, y=pos.y+1, z=pos.z}, decorations[math.random(1, #decorations)])
         end
@@ -404,15 +403,21 @@ local function make_swampy_forest(pos)
                                    and not is_air(minetest.get_node({x=pos2.x-1, y=pos2.y, z=pos2.z}).name)
                                    and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z+1}).name)
                                    and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z-1}).name)
-                                   and is_air(minetest.get_node(pos2).name)
+                                   and is_air(minetest.get_node(pos2).name) -- minetest.get_item_group(node2, "tree") == 
         local shallow_water_is_possible = not is_air(minetest.get_node({x=pos1.x+1, y=pos1.y, z=pos1.z}).name)
                                       and not is_air(minetest.get_node({x=pos1.x-1, y=pos1.y, z=pos1.z}).name)
                                       and not is_air(minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z+1}).name)
                                       and not is_air(minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z-1}).name)
+        local next_to_clear_water = minetest.get_node({x=pos1.x+1, y=pos1.y, z=pos1.z}).name == "default:water_source"
+                                    or minetest.get_node({x=pos1.x-1, y=pos1.y, z=pos1.z}).name == "default:water_source"
+                                    or minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z+1}).name == "default:water_source"
+                                    or minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z-1}).name == "default:water_source"
 
         -- try deeper water if it can't flow away
         if deep_water_is_possible and math.random() < 3/4 then
-            minetest.set_node(pos2, {name="randungeon:water_source"})
+            if minetest.get_node(pos2).name ~= "default:water_source" then
+                minetest.set_node(pos2, {name="randungeon:water_source"})
+            end
             if dark_dirt and math.random() < 1/5 then
                 minetest.set_node(pos1, {name="default:permafrost"})
             elseif math.random() < 0.5 then
@@ -425,7 +430,9 @@ local function make_swampy_forest(pos)
             end
         -- try shallower water otherwise, e.g. for steeper terrain or crater
         elseif shallow_water_is_possible and not deep_water_is_possible and (has_crater and math.random() < 9/10 or math.random() < 0.5) then
-            minetest.set_node(pos1, {name="randungeon:water_source"})
+            if minetest.get_node(pos1).name ~= "default:water_source" or next_to_clear_water then
+                minetest.set_node(pos1, {name="randungeon:water_source"})
+            end
             if water_lilies and math.random() < 1/15 then
                 make_waterlilie(pos1)
             end

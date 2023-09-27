@@ -193,7 +193,9 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 if room.center_pos then
                     -- don't let the entity spawn in a bubble cave if there is natural stone or corridors separating it from the cave's center
                     -- trees, leaves, dirt and other vegetation notably does not count as separation! and glass doesn't either, for funsies
-                    local ray = Raycast(room.center_pos, spawnp, false, false)
+                    local p = table.copy(room.center_pos)
+                    p.y = p.y + 1
+                    local ray = Raycast(p, spawnp, false, false)
                     for pointed_thing in ray do
                         local nname = minetest.get_node(pointed_thing.under)
                         if contains(randungeon.available_materials, nname) then
