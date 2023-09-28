@@ -626,6 +626,7 @@ end
 
 local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_percentage, top_staircase_height, bubble_cave_data)
 	local surface_per_slice = (width * 10) * (width * 10) -- surface of every horizontal slice of dungeon
+
 	--[[
     volume dungeon area per horizontal slice = (width * 10) * (width * 10)
 	volume ball = 4/3 * pi * r^2
@@ -647,18 +648,94 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 	-- determine how much is already filled by caves
 	local total_air_blocks = 0
 
-	for i = 0, math.ceil(height_in_blocks / 10) do
-		local area_border1 = {x=pos.x, y=pos.y-i*10, z=pos.z}
-		local area_border2 = {x=pos.x+10*width, y=pos.y-i*10, z=pos.z+10*width}
+	for i = 0, math.ceil((height_in_blocks - top_staircase_height) / 10) do
+		local area_border1 = {x=pos.x, y=pos.y-top_staircase_height-i*10, z=pos.z}
+		local area_border2 = {x=pos.x+10*width, y=pos.y-top_staircase_height-i*10, z=pos.z+10*width}
 		local air_blocks_in_this_slice = #minetest.find_nodes_in_area(area_border1, area_border2, {"air", "group:liquid"})
 		total_air_blocks = total_air_blocks + air_blocks_in_this_slice
 	end
-	local number_of_tested_slices = (1 + math.ceil(height_in_blocks / 10))
+	local number_of_tested_slices = (1 + math.ceil((height_in_blocks - top_staircase_height) / 10))
 	local total_air_blocks_per_slice = total_air_blocks / number_of_tested_slices
 	local total_air_blocks = total_air_blocks_per_slice * height_in_blocks
 	local total_blocks = (10*width) * (10*width) * height_in_blocks
 	local total_not_air_blocks = total_blocks - total_air_blocks
 	local needed_new_air_blocks = wanted_cave_percentage * total_not_air_blocks
+	local needed_new_nature_in_caves = wanted_cave_percentage * total_air_blocks * 2
+
+	-- add nature to preexisting caves until we have enough:
+
+	local radius_min = 7
+	local radius_max = 15
+	local fruitless_attempts = 0
+	local chance_of_block_being_air = total_air_blocks / total_blocks
+	--print("chance_of_block_being_air: " .. chance_of_block_being_air)
+	--print("needed_new_nature_in_caves: " .. needed_new_nature_in_caves)
+
+	while true do
+		if fruitless_attempts > (1 / chance_of_block_being_air * 10) or needed_new_nature_in_caves <= 0 then
+			print("attempts: " .. fruitless_attempts .. ", still_needed_new_nature_in_caves: " .. needed_new_nature_in_caves)
+			break
+		end
+		local bubble_radius = math.random(radius_min, radius_max)
+		local bubble_pos = {
+			x = math.random(pos.x, pos.x+10*width),
+			y = math.random(pos.y, pos.y-height_in_blocks),
+			z = math.random(pos.z, pos.z+10*width)
+		}
+		if minetest.get_node(bubble_pos).name == "air" and bubble_pos.y < -30 and minetest.get_node_light(bubble_pos, 0.5) == 0 then
+			needed_new_nature_in_caves = needed_new_nature_in_caves - 4/3 * math.pi * bubble_radius ^ 3
+			fruitless_attempts = 0
+			-- decide what nature we'll add to the bubble
+			local nature = get_random_cave_nature_type()
+			local nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature, cave_data_so_far)
+			-- define how cave data looks
+			local cave_data_so_far = {
+				center_pos = bubble_pos,
+				cave_floor = bubble_pos.y - bubble_radius * 2,
+				radius = bubble_radius,
+				type = "air",
+				frozen = false,
+				fill_height = false,
+				nature = nature,
+				nature_metadata=nature_metadata.fields
+			}
+			-- fill randungeon.dungeons data structure with info on our cave
+			local highest_y_value = bubble_pos.y + bubble_radius
+			if not bubble_cave_data[highest_y_value] then
+				bubble_cave_data[highest_y_value] = {}
+			end
+			table.insert(bubble_cave_data[highest_y_value], cave_data_so_far)
+			-- build bubble cave
+			local nature_blocks_to_grow_directly = {}
+			for x = -bubble_radius, bubble_radius do
+				for y = bubble_radius, -bubble_radius, -1 do
+					for z = -bubble_radius, bubble_radius do
+						if (x^2 + y^2 + z^2) ^ 0.5 <= bubble_radius then
+							local new_block_pos = {x=bubble_pos.x+x, y=bubble_pos.y+y, z=bubble_pos.z+z}
+							local new_block_pos_below = {x=bubble_pos.x+x, y=bubble_pos.y+y-1, z=bubble_pos.z+z}
+							local nname_below = minetest.get_node(new_block_pos_below).name
+							if minetest.get_node(new_block_pos).name == "air" and nname_below ~= "air" and minetest.get_item_group(nname_below, "liquid") == 0 then
+								minetest.set_node(new_block_pos_below, {name=nature})
+								minetest.get_meta(new_block_pos_below):from_table(nature_metadata)
+								-- find out if any nature blocks are outside the area we will green later (after the corridors are set):
+								if (bubble_pos.x+x < pos.x) or (bubble_pos.x+x > pos.x + width * 10)
+								or (bubble_pos.z+z < pos.z) or (bubble_pos.z+z > pos.z + width * 10)
+								or (bubble_pos.y+y > pos.y - top_staircase_height) or (bubble_pos.y+y < pos.y-height_in_blocks+6) then
+									table.insert(nature_blocks_to_grow_directly, new_block_pos_below)
+								end
+							end
+						end
+					end
+				end
+			end
+			-- green all nature blocks that are outside the area we will green later:
+			for _, pos2 in ipairs(nature_blocks_to_grow_directly) do
+				make_nature(pos2)
+			end
+		else
+			fruitless_attempts = fruitless_attempts + 1
+		end
+	end
 
 	-- print("total blocks: " .. tostring(total_blocks))
 	-- print("air blocks: " .. tostring(total_air_blocks))
@@ -668,9 +745,9 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 	-- fill the rest with air until we have enough:
 
 	local round = 1  -- it uses two rounds, one with larger and one with smaller bubbles
-	local radius_min = 15 -- 10 in round 2
-	local radius_max = 30 -- 20 in round 2
-	local fruitless_attempts = 0
+	radius_min = 15 -- 10 in round 2
+	radius_max = 30 -- 20 in round 2
+	fruitless_attempts = 0
 
 	while true do
 		-- make it easier if we are stuck and exit if we are still stuck after that
@@ -736,7 +813,6 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 				radius = bubble_radius,
 				type = material,
 				frozen = false, -- <- this gets corrected later when necessary
-				nature = nature,
 				fill_height = pegel
 			}
 			-- decide if we'll add nature to the bubble
@@ -747,6 +823,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature, cave_data_so_far)
 			end
 			local can_have_bumps_on_flattened_floor = math.random() < 0.5 and (nature ~= "randungeon:swampy_forest" or nature_metadata.fields.has_crater == "false")
+			cave_data_so_far.nature = nature
 			cave_data_so_far.nature_metadata = nature_metadata.fields
 			cave_data_so_far.can_have_bumps_on_flattened_floor = can_have_bumps_on_flattened_floor
 			-- fill randungeon.dungeons data structure with info on our cave
