@@ -457,7 +457,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 		for z = pos.z+z_min, pos.z+z_max do
 			local roof_pos = {x=x, y=pos.y+dungeon_deph+3, z=z}
 			if minetest.get_node(roof_pos).name == "air" then
-				minetest.set_node(roof_pos, {name="doors:trapdoor_steel"})
+				minetest.set_node(roof_pos, {name="doors:trapdoor_steel", param2=((z==pos.z+z_min) and 2 or 0)})
 			else
 				set_insulated_structure_block(roof_pos, roof_type)
 			end
