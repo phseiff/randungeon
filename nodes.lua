@@ -270,3 +270,19 @@ if minetest.get_modpath("bucket") then
 		itemname = "bucket:bucket_lava",
 	}
 end
+
+-- CEILING_ALIGNED TRAPDOOR
+
+minetest.override_item("doors:trapdoor_steel", {
+	node_box = {
+		type = "fixed",
+		fixed = {-0.5, -0.4999, -0.5, 0.5, -6/16, 0.5}
+	},
+})
+
+minetest.override_item("doors:trapdoor_steel_open", {
+	node_box = {
+		type = "fixed",
+		fixed = {-0.5, -0.4999, 6/16, 0.5, 0.5, 0.5}
+	},
+})

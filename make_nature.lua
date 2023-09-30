@@ -31,6 +31,13 @@ local function is_air(node_name)
     return false
 end
 
+local function is_solid(node_name)
+    if not is_air(node_name) and minetest.get_item_group(node_name, "liquid") == 0 then
+        return true
+    end
+    return false
+end
+
 local function make_waterlilie(pos)
     for y = 1, 60 do
         local block = minetest.get_node({x=pos.x, y=pos.y+y, z=pos.z}).name
@@ -63,6 +70,49 @@ local function place_node_if_possible(pos, nname)
     if is_air(block) then
         minetest.set_node(pos, {name=nname, param2=math.random(0, 3)})
     end
+end
+
+local function try_making_vertical_tunnel(pos, dungeon_data)
+    local air_deph = nil
+    local found_air_type = nil
+    for y = 0, 12 do
+        local p = {x=pos.x, y=pos.y-y, z=pos.z}
+        local nname = minetest.get_node(p).name
+        if nname == "randungeon:dungeon_air" or not is_solid(nname) then
+            if is_air(nname) or nname == "randungeon:dungeon_air" then
+                found_air_type = nname
+                air_deph = y
+                break
+            else
+                return false
+            end
+        end
+        for _, p2 in ipairs({{x=pos.x, y=pos.y-y, z=pos.z-1}, {x=pos.x, y=pos.y-y, z=pos.z+1}, {x=pos.x-1, y=pos.y-y, z=pos.z}, {x=pos.x+1, y=pos.y-y, z=pos.z}}) do
+            local nname2 = minetest.get_node(p2).name
+            if is_air(nname2) or nname2 == "randungeon:dungeon_air" then
+                return false
+            end
+        end
+    end
+    if not air_deph or (found_air_type == "air" and math.random() < 1/3.5) then
+        return false
+    end
+    local level_id = pos.y-(air_deph-1)
+    if not dungeon_data.levels_with_swamp_chimneys then
+        dungeon_data.levels_with_swamp_chimneys = {level_id}
+    elseif randungeon.helper_functions.contains(dungeon_data.levels_with_swamp_chimneys, level_id) then
+        return false
+    else
+        table.insert(dungeon_data.levels_with_swamp_chimneys, level_id)
+    end
+    for y = 0, air_deph do
+        local p = {x=pos.x, y=pos.y-y, z=pos.z}
+        minetest.add_node(p, {name="air"})
+        if y == air_deph then
+            minetest.add_node(p, {name="doors:trapdoor_steel", param2=20})
+        end
+    end
+    return true
 end
 
 local function make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
@@ -220,7 +270,7 @@ local function make_metadata_for_pretty_forest(pos, cave_or_room_data)
     }}
 end
 
-local function make_pretty_forest(pos)
+local function make_pretty_forest(pos, dungeon_data)
 
     if minetest.get_node(pos).name ~= "randungeon:pretty_forest" then
         print("oh noes! pos: " .. minetest.pos_to_string(pos))
@@ -345,6 +395,10 @@ local function make_metadata_for_swampy_forest(pos, cave_or_room_data)
     if (math.random() < 0.35 and not has_flattened_floor) or (math.random() < 0.08 and has_flattened_floor) then
         has_crater = true
     end
+    local has_secret_chimneys = false
+    if cave_or_room_data.center_pos then
+        has_secret_chimneys = true
+    end
 
     return {fields = {
         water_lilies=tostring(water_lilies),
@@ -355,10 +409,11 @@ local function make_metadata_for_swampy_forest(pos, cave_or_room_data)
         mushrooms=tostring(mushrooms),
         trees=tostring(trees),
         has_crater=tostring(has_crater),
+        has_secret_chimneys=tostring(has_secret_chimneys)
     }}
 end
 
-local function make_swampy_forest(pos)
+local function make_swampy_forest(pos, dungeon_data)
 
     if minetest.get_node(pos).name ~= "randungeon:swampy_forest" then
         return
@@ -373,6 +428,7 @@ local function make_swampy_forest(pos)
     local mushrooms = minetest.is_yes(metadata.mushrooms)
     local trees = minetest.is_yes(metadata.trees)
     local has_crater = minetest.is_yes(metadata.has_crater)
+    local has_secret_chimneys = minetest.is_yes(metadata.has_secret_chimneys)
 
     local pos1 = {x=pos.x, y=pos.y, z=pos.z}
     local pos2 = {x=pos.x, y=pos.y+1, z=pos.z}
@@ -404,6 +460,10 @@ local function make_swampy_forest(pos)
                                    and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z+1}).name)
                                    and not is_air(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z-1}).name)
                                    and is_air(minetest.get_node(pos2).name) -- minetest.get_item_group(node2, "tree") == 
+        local tunnel_is_possible = is_solid(minetest.get_node({x=pos2.x+1, y=pos2.y, z=pos2.z}).name)
+                               and is_solid(minetest.get_node({x=pos2.x-1, y=pos2.y, z=pos2.z}).name)
+                               and is_solid(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z+1}).name)
+                               and is_solid(minetest.get_node({x=pos2.x, y=pos2.y, z=pos2.z-1}).name)
         local shallow_water_is_possible = not is_air(minetest.get_node({x=pos1.x+1, y=pos1.y, z=pos1.z}).name)
                                       and not is_air(minetest.get_node({x=pos1.x-1, y=pos1.y, z=pos1.z}).name)
                                       and not is_air(minetest.get_node({x=pos1.x, y=pos1.y, z=pos1.z+1}).name)
@@ -427,6 +487,9 @@ local function make_swampy_forest(pos)
             end
             if water_lilies and math.random() < 1/15 then
                 make_waterlilie(pos2)
+            end
+            if tunnel_is_possible and has_secret_chimneys then
+                try_making_vertical_tunnel(pos1, dungeon_data)
             end
         -- try shallower water otherwise, e.g. for steeper terrain or crater
         elseif shallow_water_is_possible and not deep_water_is_possible and (has_crater and math.random() < 9/10 or math.random() < 0.5) then
@@ -563,16 +626,16 @@ local function get_random_pool_nature_type()
     end
 end
 
-local function make_nature(pos)
+local function make_nature(pos, dungeon_data)
     local nature_type = minetest.get_node(pos).name
-    randungeon.nature_types[nature_type].make_nature(pos)
+    randungeon.nature_types[nature_type].make_nature(pos, dungeon_data)
 end
 
-local function make_nature_in_area(area_border1, area_border2)
+local function make_nature_in_area(area_border1, area_border2, dungeon_data)
     local nature_blocks_in_area = minetest.find_nodes_in_area(area_border1, area_border2, {"group:make_nature_block"})
     while #nature_blocks_in_area > 0 do
         local pos = table.remove(nature_blocks_in_area, math.random(1, #nature_blocks_in_area))
-        make_nature(pos)
+        make_nature(pos, dungeon_data)
     end
 end
 

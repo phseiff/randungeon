@@ -7,6 +7,7 @@ randungeon.dungeons = {
           p1 = _(lower edge of the dungeon entity spawn area),
           p2 = _(upper edge of the randungen entity spawn area),
           lowest_explored_y = _(lowest y value any player has ever been to in the dungeon area),
+          levels_with_swamp_chimneys = (list of y-values where a secret vertical tunnel from a swamp down into a corridor or cave ends),
           bubble_caves = {
                _some_upper_y_value = {
                     {

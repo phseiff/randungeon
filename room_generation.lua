@@ -267,7 +267,7 @@ local function make_room_style(materials, former_room_style)
     return best_room_style
 end
 
-local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style, rooms_data)
+local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus, room_style, rooms_data, dungeon_data)
 	-- normalize pos values:
 	if not pos_a or not pos_b then
 		pos_a = {x=pos.x+1, y=pos.y, z=pos.z+1}
@@ -683,7 +683,7 @@ local function make_room(pos, pos_a, pos_b, floor_type, wall_type_1, wall_type_2
 					end
 				end
 			end
-			make_nature_in_area(room_corner_1, room_corner_2)
+			make_nature_in_area(room_corner_1, room_corner_2, dungeon_data)
 			if frozen then
 				freeze_area(room_corner_1, room_corner_2, false)
 			end
