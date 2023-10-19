@@ -22,6 +22,10 @@ minetest.register_privilege("randungeon_dev", {
 -- Functions to spawn entities in dungeons when the player enters new areas
 --
 
+-- function to override the code that selects mobs for a room
+-- if defined, it should take the room/cave data and return a list of monster groups
+randungeon.get_entities_for_room = nil
+
 randungeon.entity_levels = {
     air = 1
 }
@@ -280,33 +284,37 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
         -- fill caves
         if dungeon_data.bubble_caves[y] then
             for _, cave in ipairs(dungeon_data.bubble_caves[y]) do
-                local entity_groups = table.copy(randungeon.entity_groups)
-                local cave_tiles = math.pi * cave.radius^2
-                local max_entities = math.min(randungeon.max_entities_per_cave, cave_tiles / (7^2))
-                local max_level = math.floor(max_entities * cave.level)
                 local cave_entities_in_groups = {}
-                while #entity_groups > 0 do
-                    local i = math.random(1, #entity_groups)
+                if randungeon.get_entities_for_room then
+                    cave_entities_in_groups = randungeon.get_entities_for_room(cave)
+                else
+                    local entity_groups = table.copy(randungeon.entity_groups)
+                    local cave_tiles = math.pi * cave.radius^2
+                    local max_entities = math.min(randungeon.max_entities_per_cave, cave_tiles / (7^2))
+                    local max_level = math.floor(max_entities * cave.level)
+                    while #entity_groups > 0 do
+                        local i = math.random(1, #entity_groups)
 
-                    -- find out if group is unfit for caves in general
-                    local caves_or_rooms = entity_groups[i].caves_or_rooms
-                    local unfit_for_caves = false
-                    if caves_or_rooms ~= "both" and caves_or_rooms ~= "caves" then
-                        unfit_for_caves = true
-                    end
-
-                    -- find out if group is underpowered
-                    local group_is_underpowered = group_is_underpowered(cave, entity_groups[i])
-
-                    -- decide which entities from which group will fill the cave
-                    if math.random() <= 1 / group_is_underpowered and not unfit_for_caves then
-                        local entity_group = table.remove(entity_groups, i)
-                        max_entities, max_level = fill_room_or_cave_with_entity_group(cave, entity_group, cave_entities_in_groups, max_entities, max_level)
-                        if max_entities == false or max_entities <= 0 then
-                            break
+                        -- find out if group is unfit for caves in general
+                        local caves_or_rooms = entity_groups[i].caves_or_rooms
+                        local unfit_for_caves = false
+                        if caves_or_rooms ~= "both" and caves_or_rooms ~= "caves" then
+                            unfit_for_caves = true
                         end
-                    elseif unfit_for_caves then
-                        table.remove(entity_groups, i)
+
+                        -- find out if group is underpowered
+                        local group_is_underpowered = group_is_underpowered(cave, entity_groups[i])
+
+                        -- decide which entities from which group will fill the cave
+                        if math.random() <= 1 / group_is_underpowered and not unfit_for_caves then
+                            local entity_group = table.remove(entity_groups, i)
+                            max_entities, max_level = fill_room_or_cave_with_entity_group(cave, entity_group, cave_entities_in_groups, max_entities, max_level)
+                            if max_entities == false or max_entities <= 0 then
+                                break
+                            end
+                        elseif unfit_for_caves then
+                            table.remove(entity_groups, i)
+                        end
                     end
                 end
                 -- physically fill cave with the entities
@@ -316,34 +324,38 @@ local function spawn_entities(p1, p2, dungeon_data, actually_spawn)
         -- fill rooms
         if dungeon_data.rooms[y] then
             for _, room in ipairs(dungeon_data.rooms[y]) do
-                local entity_groups = table.copy(randungeon.entity_groups)
-                local room_tiles_min = 6 * 6
-                local room_tiles_real = (room.p2.x-room.p1.x-1) * (room.p2.z-room.p1.z-1)
-                local max_entities = math.floor(room_tiles_real / room_tiles_min * 5 * (1 + 0.5 * math.random()))
-                local max_level = math.floor(max_entities * room.level)
                 local room_entities_in_groups = {}
-                while #entity_groups > 0 do
-                    local i = math.random(1, #entity_groups)
+                if randungeon.get_entities_for_room then
+                    room_entities_in_groups = randungeon.get_entities_for_room(room)
+                else
+                    local entity_groups = table.copy(randungeon.entity_groups)
+                    local room_tiles_min = 6 * 6
+                    local room_tiles_real = (room.p2.x-room.p1.x-1) * (room.p2.z-room.p1.z-1)
+                    local max_entities = math.floor(room_tiles_real / room_tiles_min * 5 * (1 + 0.5 * math.random()))
+                    local max_level = math.floor(max_entities * room.level)
+                    while #entity_groups > 0 do
+                        local i = math.random(1, #entity_groups)
 
-                    -- find out if group is unfit for rooms in general
-                    local caves_or_rooms = entity_groups[i].caves_or_rooms
-                    local unfit_for_rooms = false
-                    if caves_or_rooms ~= nil and caves_or_rooms ~= "both" and caves_or_rooms ~= "rooms" then
-                        unfit_for_rooms = true
-                    end
-
-                    -- find out if group is underpowered
-                    local group_is_underpowered = group_is_underpowered(room, entity_groups[i])
-
-                    -- decide which entities from which group will fill the room
-                    if math.random() <= 1 / group_is_underpowered and not unfit_for_rooms then
-                        local entity_group = table.remove(entity_groups, i)
-                        max_entities, max_level = fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
-                        if max_entities == false or max_entities <= 0 then
-                            break
+                        -- find out if group is unfit for rooms in general
+                        local caves_or_rooms = entity_groups[i].caves_or_rooms
+                        local unfit_for_rooms = false
+                        if caves_or_rooms ~= nil and caves_or_rooms ~= "both" and caves_or_rooms ~= "rooms" then
+                            unfit_for_rooms = true
                         end
-                    elseif unfit_for_rooms then
-                        table.remove(entity_groups, i)
+
+                        -- find out if group is underpowered
+                        local group_is_underpowered = group_is_underpowered(room, entity_groups[i])
+
+                        -- decide which entities from which group will fill the room
+                        if math.random() <= 1 / group_is_underpowered and not unfit_for_rooms then
+                            local entity_group = table.remove(entity_groups, i)
+                            max_entities, max_level = fill_room_or_cave_with_entity_group(room, entity_group, room_entities_in_groups, max_entities, max_level)
+                            if max_entities == false or max_entities <= 0 then
+                                break
+                            end
+                        elseif unfit_for_rooms then
+                            table.remove(entity_groups, i)
+                        end
                     end
                 end
                 -- physically fill room with the entities
