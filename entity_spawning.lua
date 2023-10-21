@@ -32,6 +32,7 @@ randungeon.entity_levels = {
 randungeon.entity_spawnblocks = {}
 randungeon.cave_entity_spawnblocks = {}
 randungeon.entity_required_surroundings = {}
+randungeon.entity_can_spawn_in_air = {}
 randungeon.entity_groups = {}
 
 randungeon.max_level_of_group_underpowerdness = 4
@@ -141,7 +142,7 @@ end
 local function physically_fill_room_or_cave_with_entities(room, room_entities_in_groups, spawned_entities, actually_spawn)
 
     -- likely remove last group we added if it is very small, to avoid super cut-off groups
-    if #room_entities_in_groups > 1 then
+    if #room_entities_in_groups > 1 and not randungeon.get_entities_for_room then
         if math.random() < 1 / #room_entities_in_groups[#room_entities_in_groups] then
             table.remove(room_entities_in_groups, #room_entities_in_groups)
         end
@@ -167,6 +168,11 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 valid_spawnblocks = randungeon.cave_entity_spawnblocks[entity_name] -- if in a cave, use randungeon.cave_entity_spawnblocks
             elseif randungeon.entity_spawnblocks[entity_name] then
                 valid_spawnblocks = randungeon.entity_spawnblocks[entity_name] -- else, use randungeon.entity_spawnblocks
+            elseif minetest.registered_items[entity_name] then
+                valid_spawnblocks = {"air", "randungeon:air_glowing", "group:water"}
+                if minetest.get_item_group(entity_name, "flammable") == 0 then
+                    table.insert(valid_spawnblocks, "group:lava")
+                end
             else
                 valid_spawnblocks = {"air", "randungeon:air_glowing"} -- else, use defaults
             end
@@ -179,7 +185,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             if room.p1 then
                 valid_spawnpositions = minetest.find_nodes_in_area({x=room.p1.x, y=room.p1.y-pool_deph+1, z=room.p1.z}, room.p2, valid_spawnblocks)
             elseif room.center_pos then
-                local p1 = {x=room.center_pos.x-room.radius, y=room.cave_floor or (room.center_pos.y-room.radius), z=room.center_pos.z-room.radius}
+                local p1 = {x=room.center_pos.x-room.radius, y=room.cave_floor-1 or (room.center_pos.y-room.radius), z=room.center_pos.z-room.radius}
                 local p2 = {x=room.center_pos.x+room.radius, y=room.center_pos.y+room.radius, z=room.center_pos.z+room.radius}
                 valid_spawnpositions = minetest.find_nodes_in_area(p1, p2, valid_spawnblocks)
                 for i = #valid_spawnpositions, 1, -1 do
@@ -210,7 +216,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 end
                 if removed_due_to_missing_los then
                     do end
-                elseif not node_under_is_walkable then
+                elseif not node_under_is_walkable and not randungeon.entity_can_spawn_in_air[entity_name] then
                     table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
                 elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
                     local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)
@@ -261,6 +267,8 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 if actually_spawn then
                     if minetest.registered_entities[entity_name] then
                         minetest.add_entity(chosen_spawn_pos, entity_name, minetest.serialize({naturally_spawned=true}))
+                        -- remember that we already spawned a mob here
+                        table.insert(positions_where_mobs_already_spawned, minetest.pos_to_string(chosen_spawn_pos))
                     elseif minetest.registered_items[entity_name] then
                         local item_obj = minetest.add_item(chosen_spawn_pos, entity_name)
                         item_obj:get_luaentity().immortal_item = true
@@ -268,8 +276,6 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                         -- needs to be implemented by other mods, of course
                     end
                 end
-                -- remember that we already spawned a mob here
-                table.insert(positions_where_mobs_already_spawned, minetest.pos_to_string(chosen_spawn_pos))
             end
         end
     end
@@ -426,7 +432,7 @@ local function delete_entities_between_points(p1, p2)
     local objs = minetest.get_objects_in_area(p1, p2)
     for _, obj in ipairs(objs) do
         local ent = obj:get_luaentity()
-        if ent and (randungeon.entity_levels[ent.name] or ent.name == "__builtin:item") then
+        if ent and ((randungeon.entity_levels[ent.name] or randungeon.get_entities_for_room) or ent.name == "__builtin:item") then
             obj:remove()
         end
     end
