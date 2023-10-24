@@ -141,6 +141,21 @@ end
 
 local function physically_fill_room_or_cave_with_entities(room, room_entities_in_groups, spawned_entities, actually_spawn)
 
+    -- load area
+    local p1, p2
+    if room.p1 then
+        p1 = room.p1
+        p2 = room.p2
+    elseif room.center_pos then
+        p1 = vector.add(room.center_pos, {x=room.radius+1, y=room.radius+1, z=room.radius+1})
+        p1 = vector.subtract(room.center_pos, {x=room.radius+1, y=room.radius+1, z=room.radius+1})
+    end
+    minetest.load_area(p1, p2)
+
+    -- create a table in which we cache for every "type" of entity (as defined by its spawning requirements,
+    --  like rounded-up height and allowed spawn blocks) which positions it can occupy in the room/cave
+    local possible_entity_positions = {}
+
     -- likely remove last group we added if it is very small, to avoid super cut-off groups
     if #room_entities_in_groups > 1 and not randungeon.get_entities_for_room then
         if math.random() < 1 / #room_entities_in_groups[#room_entities_in_groups] then
@@ -158,10 +173,12 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             table.insert(room_entities, entity_name)
         end
     end
+    --print("all to spawn: " .. minetest.serialize(room_entities))
     -- physically place entities in room
     local positions_where_mobs_already_spawned = {}
     for _, entity_name in ipairs(room_entities) do
         if entity_name ~= "air" then
+            --print("to spawn: " .. entity_name)
             -- get list of blocks the entity can spawn in
             local valid_spawnblocks
             if room.center_pos and randungeon.cave_entity_spawnblocks[entity_name] then 
@@ -176,65 +193,80 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             else
                 valid_spawnblocks = {"air", "randungeon:air_glowing"} -- else, use defaults
             end
+            -- get pool deph, if applicable
             local pool_deph = 1
             if randungeon.nature_types[room.pool_content] then
                 pool_deph = randungeon.nature_types[room.pool_content].pool_deph or 1
             end
+            -- get entity "type" (as defined by all the parameters that define if it can spawn somewhere)
+            local ent_type = minetest.serialize(valid_spawnblocks)
+            local ent_def = minetest.registered_entities[entity_name]
+            if ent_def and ent_def.collisionbox then
+                ent_type = ent_type .. math.ceil(math.abs(ent_def.collisionbox[5] - ent_def.collisionbox[2]))
+            end
             -- get list of positions that hold these blocks
             local valid_spawnpositions
-            if room.p1 then
-                valid_spawnpositions = minetest.find_nodes_in_area({x=room.p1.x, y=room.p1.y-pool_deph+1, z=room.p1.z}, room.p2, valid_spawnblocks)
-            elseif room.center_pos then
-                local p1 = {x=room.center_pos.x-room.radius, y=room.cave_floor-1 or (room.center_pos.y-room.radius), z=room.center_pos.z-room.radius}
-                local p2 = {x=room.center_pos.x+room.radius, y=room.center_pos.y+room.radius, z=room.center_pos.z+room.radius}
-                valid_spawnpositions = minetest.find_nodes_in_area(p1, p2, valid_spawnblocks)
-                for i = #valid_spawnpositions, 1, -1 do
-                    if vector.distance(room.center_pos, valid_spawnpositions[i]) > room.radius + 1 then
-                        table.remove(valid_spawnpositions, i)
-                    end
-                end
-            end
-            -- remove every spawn position if mob doesn't fit there, would float, or adjust spawn position based on mob collissionbox
-            for i = #valid_spawnpositions, 1, -1 do
-                local spawnp = valid_spawnpositions[i]
-                local ndef_under = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name]
-                local node_under_is_walkable = ndef_under and ndef_under.walkable
-                local removed_due_to_missing_los = false
-                if room.center_pos then
-                    -- don't let the entity spawn in a bubble cave if there is natural stone or corridors separating it from the cave's center
-                    -- trees, leaves, dirt and other vegetation notably does not count as separation! and glass doesn't either, for funsies
-                    local p = table.copy(room.center_pos)
-                    p.y = p.y + 1
-                    local ray = Raycast(p, spawnp, false, false)
-                    for pointed_thing in ray do
-                        local nname = minetest.get_node(pointed_thing.under)
-                        if contains(randungeon.available_materials, nname) then
+            if possible_entity_positions[ent_type] then
+                -- if possible, load valid spawn positions from table
+                --print("loaded valid spawn positions from cache")
+                valid_spawnpositions = table.copy(possible_entity_positions[ent_type])
+            else
+                -- otherwise, regenerate them
+                if room.p1 then
+                    valid_spawnpositions = minetest.find_nodes_in_area({x=room.p1.x, y=room.p1.y-pool_deph+1, z=room.p1.z}, room.p2, valid_spawnblocks)
+                elseif room.center_pos then
+                    local p1 = {x=room.center_pos.x-room.radius, y=room.cave_floor-1 or (room.center_pos.y-room.radius), z=room.center_pos.z-room.radius}
+                    local p2 = {x=room.center_pos.x+room.radius, y=room.center_pos.y+room.radius, z=room.center_pos.z+room.radius}
+                    valid_spawnpositions = minetest.find_nodes_in_area(p1, p2, valid_spawnblocks)
+                    for i = #valid_spawnpositions, 1, -1 do
+                        if vector.distance(room.center_pos, valid_spawnpositions[i]) > room.radius + 1 then
                             table.remove(valid_spawnpositions, i)
-                            removed_due_to_missing_los = true
                         end
                     end
                 end
-                if removed_due_to_missing_los then
-                    do end
-                elseif not node_under_is_walkable and not randungeon.entity_can_spawn_in_air[entity_name] then
-                    table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
-                elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
-                    local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)
-                    if not modified_spawn_pos then
-                        table.remove(valid_spawnpositions, i) -- <- remove bc randungeon_monsters says this position isn't valid
-                    else
-                        valid_spawnpositions[i] = modified_spawn_pos
+                -- remove every spawn position if mob doesn't fit there, would float, or adjust spawn position based on mob collissionbox
+                for i = #valid_spawnpositions, 1, -1 do
+                    local spawnp = valid_spawnpositions[i]
+                    local ndef_under = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name]
+                    local node_under_is_walkable = ndef_under and ndef_under.walkable
+                    local removed_due_to_missing_los = false
+                    if room.center_pos then
+                        -- don't let the entity spawn in a bubble cave if there is natural stone or corridors separating it from the cave's center
+                        -- trees, leaves, dirt and other vegetation notably does not count as separation! and glass doesn't either, for funsies
+                        local p = table.copy(room.center_pos)
+                        p.y = p.y + 1
+                        local ray = Raycast(p, spawnp, false, false)
+                        for pointed_thing in ray do
+                            local nname = minetest.get_node(pointed_thing.under)
+                            if contains(randungeon.available_materials, nname) then
+                                table.remove(valid_spawnpositions, i)
+                                removed_due_to_missing_los = true
+                            end
+                        end
                     end
-                elseif minetest.get_modpath("mobs") and not minetest.registered_items[entity_name] then
-                    local modified_spawn_pos = mobs:can_spawn(spawnp, entity_name)
-                    if not modified_spawn_pos then
-                        table.remove(valid_spawnpositions, i) -- <- remove bc mobs_redo says this position isn't valid
-                    else
-                        -- modify spawn position so it doesn't suffocate if it has a weird collision box
-                        local entity_definition = minetest.registered_entities[entity_name]
-                        valid_spawnpositions[i].y = modified_spawn_pos.y + (entity_definition.collisionbox[2] * -1) - 0.4
+                    if removed_due_to_missing_los then
+                        do end
+                    elseif not node_under_is_walkable and not randungeon.entity_can_spawn_in_air[entity_name] then
+                        table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
+                    elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
+                        local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)
+                        if not modified_spawn_pos then
+                            table.remove(valid_spawnpositions, i) -- <- remove bc randungeon_monsters says this position isn't valid
+                        else
+                            valid_spawnpositions[i] = modified_spawn_pos
+                        end
+                    elseif minetest.get_modpath("mobs") and not minetest.registered_items[entity_name] then
+                        local modified_spawn_pos = mobs:can_spawn(spawnp, entity_name)
+                        if not modified_spawn_pos then
+                            table.remove(valid_spawnpositions, i) -- <- remove bc mobs_redo says this position isn't valid
+                        else
+                            -- modify spawn position so it doesn't suffocate if it has a weird collision box
+                            local entity_definition = minetest.registered_entities[entity_name]
+                            valid_spawnpositions[i].y = modified_spawn_pos.y + (entity_definition.collisionbox[2] * -1) - 0.4
+                        end
                     end
                 end
+                possible_entity_positions[ent_type] = valid_spawnpositions
             end
             -- remove spawn positions that are already used, if there are other options:
             local valid_spawnpositions_with_no_doubles = table.copy(valid_spawnpositions)
@@ -262,6 +294,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
             if #valid_spawnpositions == 0 then
                 print("failed to find a valid spawn position for " .. entity_name .. "!")
             else
+                --print("spawning " .. entity_name)
                 local chosen_spawn_pos = valid_spawnpositions[math.random(1, #valid_spawnpositions)]
                 table.insert(spawned_entities, entity_name)
                 if actually_spawn then
