@@ -25,6 +25,8 @@ minetest.register_privilege("randungeon_dev", {
 -- function to override the code that selects mobs for a room
 -- if defined, it should take the room/cave data and return a list of monster groups
 randungeon.get_entities_for_room = nil
+-- function that takes a player and false or true and does smth to show to them that entities are spawning rn
+randungeon.tell_player_entities_are_spawning = nil
 
 randungeon.entity_levels = {
     air = 1
@@ -432,10 +434,16 @@ local function spawn_entities_if_necessary(player)
     for _, dungeon_data in pairs(randungeon.dungeons) do
         if dungeon_data.p1.x <= pos.x and dungeon_data.p2.x >= pos.x and dungeon_data.p1.z <= pos.z and dungeon_data.p2.z >= pos.z
         and pos.y < dungeon_data.lowest_explored_y and pos.y >= dungeon_data.p1.y then
+            if randungeon.tell_player_entities_are_spawning then
+                randungeon.tell_player_entities_are_spawning(player, true)
+            end
             local p1 = {x=dungeon_data.p1.x, y=pos.y-BUFFER_SIZE, z=dungeon_data.p1.z}
             local p2 = {x=dungeon_data.p2.x, y=dungeon_data.lowest_explored_y-BUFFER_SIZE-1, z=dungeon_data.p2.z}
             dungeon_data.lowest_explored_y = pos.y
             spawn_entities(p1, p2, dungeon_data)
+            if randungeon.tell_player_entities_are_spawning then
+                randungeon.tell_player_entities_are_spawning(player, false)
+            end
             return -- assumes that no two dungeons can overlap
         end
     end
