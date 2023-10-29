@@ -166,25 +166,27 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
     if actually_spawn then
         room.spawned_entities = room_entities_in_groups
     end
-    -- put all room entities into a single list
-    local room_entities = {}
-    for _, group in ipairs(room_entities_in_groups) do
-        for _, entity_name in ipairs(group) do
-            table.insert(room_entities, entity_name)
-        end
+    -- decide additional spawn requirements
+    local only_on_ground_content = false
+    if room.center_pos and math.random() < 2/3 then
+        only_on_ground_content = true
     end
+    local group_together = math.random() < 2/3
     --print("all to spawn: " .. minetest.serialize(room_entities))
     -- physically place entities in room
     local positions_where_mobs_already_spawned = {}
-    for _, entity_name in ipairs(room_entities) do
-        if entity_name ~= "air" then
+    -- iterate over entities
+    local last_pos_of_this_group
+    for _, group in ipairs(room_entities_in_groups) do
+        last_pos_of_this_group = nil
+        for _, entity_name in ipairs(group) do
             --print("to spawn: " .. entity_name)
             -- get list of blocks the entity can spawn in
             local valid_spawnblocks
             if room.center_pos and randungeon.cave_entity_spawnblocks[entity_name] then 
-                valid_spawnblocks = randungeon.cave_entity_spawnblocks[entity_name] -- if in a cave, use randungeon.cave_entity_spawnblocks
+                valid_spawnblocks = table.copy(randungeon.cave_entity_spawnblocks[entity_name]) -- if in a cave, use randungeon.cave_entity_spawnblocks
             elseif randungeon.entity_spawnblocks[entity_name] then
-                valid_spawnblocks = randungeon.entity_spawnblocks[entity_name] -- else, use randungeon.entity_spawnblocks
+                valid_spawnblocks = table.copy(randungeon.entity_spawnblocks[entity_name]) -- else, use randungeon.entity_spawnblocks
             elseif minetest.registered_items[entity_name] then
                 valid_spawnblocks = {"air", "randungeon:air_glowing", "group:water"}
                 if minetest.get_item_group(entity_name, "flammable") == 0 then
@@ -192,6 +194,11 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 end
             else
                 valid_spawnblocks = {"air", "randungeon:air_glowing"} -- else, use defaults
+            end
+            local can_spawn_in_air
+            if randungeon.helper_functions.contains(valid_spawnblocks, "air") then
+                can_spawn_in_air = true
+                table.insert(valid_spawnblocks, "default:snow")
             end
             -- get pool deph, if applicable
             local pool_deph = 1
@@ -229,6 +236,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                     local spawnp = valid_spawnpositions[i]
                     local ndef_under = minetest.registered_nodes[minetest.get_node({x=spawnp.x, y=spawnp.y-1, z=spawnp.z}).name]
                     local node_under_is_walkable = ndef_under and ndef_under.walkable
+                    local node_under_is_ground_content = ndef_under and ndef_under.is_ground_content
                     local removed_due_to_missing_los = false
                     if room.center_pos then
                         -- don't let the entity spawn in a bubble cave if there is natural stone or corridors separating it from the cave's center
@@ -246,7 +254,8 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                     end
                     if removed_due_to_missing_los then
                         do end
-                    elseif not node_under_is_walkable and not randungeon.entity_can_spawn_in_air[entity_name] then
+                    elseif (not node_under_is_walkable or (can_spawn_in_air and not node_under_is_ground_content and only_in_ground_content))
+                    and not randungeon.entity_can_spawn_in_air[entity_name] then
                         table.remove(valid_spawnpositions, i) -- <- remove bc entity would float
                     elseif minetest.get_modpath("randungeon_monsters") and not minetest.registered_items[entity_name] then
                         local modified_spawn_pos = randungeon_monsters.fix_spawn_position(spawnp, entity_name)
@@ -297,6 +306,12 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 --print("spawning " .. entity_name)
                 local chosen_spawn_pos = valid_spawnpositions[math.random(1, #valid_spawnpositions)]
                 table.insert(spawned_entities, entity_name)
+                if group_together and last_pos_of_this_group then
+                    while math.random() > 1 / vector.distance(chosen_spawn_pos, last_pos_of_this_group) do
+                        chosen_spawn_pos = valid_spawnpositions[math.random(1, #valid_spawnpositions)]
+                    end
+                end
+                last_pos_of_this_group = chosen_spawn_pos
                 if actually_spawn then
                     if minetest.registered_entities[entity_name] then
                         minetest.add_entity(chosen_spawn_pos, entity_name, minetest.serialize({naturally_spawned=true}))
@@ -452,9 +467,9 @@ local function do_thing_with_player_dungeon_corner_points(player, f)
             and pos.y < dungeon_data.p2.y and pos.y >= dungeon_data.p1.y then
                 local p1 = {x=dungeon_data.p1.x-35, y=dungeon_data.p1.y, z=dungeon_data.p1.z-35}
                 local p2 = {x=dungeon_data.p2.x+35, y=dungeon_data.p2.y, z=dungeon_data.p2.z+35}
-	            minetest.load_area(p1, p2)
                 f(p1, p2, dungeon_data)
                 dungeon_data.lowest_explored_y = p1.y-60 -- set the dungeon to fully explored so the resulting dungeon doesn't get changed by new entities spawning
+	            minetest.load_area(p1, p2)
                 return true
             end
         end
@@ -506,6 +521,24 @@ local function unlight_air_between_points(p1, p2)
         end
     end
 end
+
+minetest.register_chatcommand("randungeon:cauterize_dungeon", {
+    params = "",
+    description = "prevents any further entities from being spawned in this dungeon.",
+    privs = {randungeon_dev=true},
+    func = function(name, param)
+        local player = minetest.get_player_by_name(name)
+        local finished_execution = do_thing_with_player_dungeon_corner_points(player, function(p1, p2)
+            local randungeon_dungeons_string = minetest.serialize(randungeon.dungeons)
+            randungeon.storage:set_string("dungeons", randungeon_dungeons_string)
+        end)
+        if finished_execution then
+            minetest.chat_send_player(name, "Prevented entities from spawning in this dungeon.")
+        else
+            minetest.chat_send_player(name, "Couldn't cauterize dungeon bc you aren't in a dungeon right now.")
+        end
+    end
+})
 
 minetest.register_chatcommand("randungeon:clear_dungeon", {
     params = "",
