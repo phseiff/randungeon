@@ -519,7 +519,8 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 	else
 		stair_index = 4
 	end
-	for y = pos.y, pos.y+dungeon_deph do
+	local step_number = is_top_staircase and (dungeon_deph+1) or dungeon_deph
+	for y = pos.y, pos.y+step_number do
 		set_insulated_structure_block({x=stair_positions[stair_index][1], y=y, z=stair_positions[stair_index][2]}, floor_type)
 		stair_index = stair_index + 1
 		if stair_index > 4 then

@@ -316,7 +316,7 @@ local function physically_fill_room_or_cave_with_entities(room, room_entities_in
                 last_pos_of_this_group = chosen_spawn_pos
                 if actually_spawn then
                     if minetest.registered_entities[entity_name] then
-                        minetest.add_entity(chosen_spawn_pos, entity_name, minetest.serialize({naturally_spawned=true}))
+                        minetest.add_entity(chosen_spawn_pos, entity_name, minetest.serialize({naturally_spawned=true, room_or_cave=room}))
                         -- remember that we already spawned a mob here
                         table.insert(positions_where_mobs_already_spawned, minetest.pos_to_string(chosen_spawn_pos))
                     elseif minetest.registered_items[entity_name] then

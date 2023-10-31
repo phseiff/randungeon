@@ -171,6 +171,12 @@ randungeon.initialize_perlin = function()
     randungeon.pond_noise = minetest.get_perlin(pond_noise_definition)
 end
 
+minetest.register_on_joinplayer(function(player, last_login)
+    if not randungeon.pond_noise then
+        randungeon.pond_noise = minetest.get_perlin(pond_noise_definition)
+    end
+end)
+
 --
 -- define types of nature
 --
