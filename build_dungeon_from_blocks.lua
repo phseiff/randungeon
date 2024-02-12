@@ -54,7 +54,7 @@ local freeze_frozen_levels = frozen_levels_functions.freeze_frozen_levels
 -- Local Helper Functions
 --
 
-local function set_structure_block(pos, name, only_replace_solid_blocks, dont_replace_pool_blocks)
+local function set_structure_block(pos, name, only_replace_solid_blocks, dont_replace_pool_blocks, is_staircase_mantle)
 	local old_node_name = minetest.get_node(pos).name
 	-- turn cobble around water into mossy cobble
 	if name == "default:cobble" and minetest.find_node_near(pos, 1, {"group:water"}) then
@@ -94,10 +94,13 @@ local function set_structure_block(pos, name, only_replace_solid_blocks, dont_re
 	-- air nodes don't get placed, unless in water, in which case they get turned into glass, or lava, in which case they get turned into dungeon air
 	-- (that later gets automatically obsidian-glass-mantlet)
 	if name == "air" or name == "randungeon:dungeon_air" then
+		local old_ndef = minetest.registered_nodes[old_node_name]
 		if old_node_name == "default:water_source" then
 			minetest.set_node(pos, {name="default:glass"})
 		elseif minetest.registered_nodes[old_node_name].groups.igniter then
 			minetest.set_node(pos, {name="randungeon:dungeon_air"})
+		elseif is_staircase_mantle and old_ndef and old_ndef.buildable_to then
+			minetest.set_node(pos, {name="default:glass"})
 		end
 		return
 	end
@@ -128,9 +131,9 @@ local function insulate_position(pos, only_against_fire)
 	end
 end
 
-local function set_insulated_structure_block(pos, block_type, only_against_fire)
+local function set_insulated_structure_block(pos, block_type, only_against_fire, is_staircase_mantle)
 	insulate_position(pos, only_against_fire)
-	set_structure_block(pos, block_type)
+	set_structure_block(pos, block_type, nil, nil, is_staircase_mantle)
 end
 
 local function make_insulated_cavity(pos)
@@ -150,7 +153,7 @@ end
 --
 
 local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof_type, wall_type_1, wall_type_2, pillar_type, x_plus, x_minus, z_plus, z_minus,
-	                                                       bridge_type, is_dead_end, pillar_height, needs_staircase, room_style, has_room, rooms_data, dungeon_data)
+	                                                       bridge_type, is_dead_end, staircase_height, pillar_height, needs_staircase, room_style, has_room, rooms_data, dungeon_data, is_bottom_level)
 	local dirs = {
 		{x_plus, "x", "z", function(n) return 11 - n end, "x_plus"},
 		{x_minus, "x", "z", function(n) return n end, "x_minus"},
@@ -346,7 +349,12 @@ local function build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof
 	-- CREATE NATURE AROUND TILE before yeeting leaves that grew into corridors with air:
 	-- update: we can actually do it after we fill the corridors with air, bc the air we fill them with is dungeon_air, which we can tell nature not to grow into;
 	--  hence why you find this call at the end of a function now
-	make_nature_in_area({x=pos.x, y=pos.y+4, z=pos.z}, {x=pos.x+10, y=pos.y+4+pillar_height, z=pos.z+10}, dungeon_data)
+	local p1 = {x=pos.x, y=pos.y+4, z=pos.z}
+	local p2 = {x=pos.x+10, y=pos.y+4+staircase_height, z=pos.z+10}
+	if is_bottom_level then
+		p1.y = p1.y - 6 - pillar_height
+	end
+	make_nature_in_area(p1, p2, dungeon_data)
 end
 
 local function build_dungeon_tile_pillar(pos, pillar_type, dungeon_deph)
@@ -484,7 +492,7 @@ local function build_dungeon_stairs(pos, stair_position, stair_orientation, dung
 						if contains({"flowers:waterlily_waving", "default:snow"}, block_to_build_wall_to) and minetest.get_natural_light(p) < 4 then
 							minetest.set_node(p, {name="randungeon:dungeon_air"})
 						else
-							set_insulated_structure_block(p, wall_type_1)
+							set_insulated_structure_block(p, wall_type_1, nil, true)
 						end
 					end
 				end
@@ -822,7 +830,7 @@ local function add_artificial_caves(pos, width, height_in_blocks, wanted_cave_pe
 			local nature = false
 			local nature_metadata = {fields={}}
 			if material == "air" or (material == "default:water_source" and pegel and pegel < 0.45) and math.random() < 0.5 then
-				nature = get_random_cave_nature_type()
+				nature = get_random_cave_nature_type(cave_data_so_far)
 				nature_metadata = make_metadata_for_nature({x=bubble_pos.x, y=bubble_pos.y - bubble_radius * 1/3, z=bubble_pos.z}, nature, cave_data_so_far)
 			end
 			local can_have_bumps_on_flattened_floor = math.random() < 0.5 and (nature ~= "randungeon:swampy_forest" or nature_metadata.fields.has_crater == "false")
@@ -885,7 +893,7 @@ end
 
 local function make_dungeon_tile(pos, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus,
 	                             dungeon_deph, staircase_height, pillar_height, stair_position, stair_orientation, bridge_type, is_dead_end, room_style, has_pillar,
-						         has_room, is_top_level, this_dungeon)
+						         has_room, is_top_level, is_bottom_level, this_dungeon)
 
 	if is_top_level == nil then
 		is_top_level = false
@@ -906,14 +914,14 @@ local function make_dungeon_tile(pos, floor_type, wall_type_1, wall_type_2, roof
 		build_dungeon_tile_pillar(pos, pillar_type, pillar_height)
 	end
 	build_dungeon_tile_floor_and_roof_and_walls(pos, floor_type, roof_type, wall_type_1, wall_type_2, pillar_type, x_plus, x_minus, z_plus, z_minus, bridge_type,
-	                                            is_dead_end, pillar_height, stair_position, room_style, has_room, this_dungeon.rooms, this_dungeon)
+	                                            is_dead_end, staircase_height, pillar_height, stair_position, room_style, has_room, this_dungeon.rooms, this_dungeon, is_bottom_level)
 	if stair_position then
 		build_dungeon_stairs(pos, stair_position, stair_orientation, staircase_height, floor_type, roof_type, wall_type_1, is_top_level, this_dungeon.staircases)
 	end
 end
 
 local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, dungeon_deph, staircase_height, pillar_height, rim_sealed,
-	                        called_by_dungeon_maker_function, bridge_type, room_style, map, is_top_level, this_dungeon)
+	                        called_by_dungeon_maker_function, bridge_type, room_style, map, is_top_level, is_bottom_level, this_dungeon)
 
 	if is_top_level == nil then
 		is_top_level = false
@@ -962,7 +970,7 @@ local function make_dungeon_level(pos, width, floor_type, wall_type_1, wall_type
 							tile_specific_materials.bridge_type or bridge_type,
 							tile.is_dead_end,
 							tile_specific_room_style or room_style,
-							tile.has_pillar, tile.has_room, is_top_level, this_dungeon)
+							tile.has_pillar, tile.has_room, is_top_level, is_bottom_level, this_dungeon)
 	end
 	-- replace dungeon air with normal air
 	if not called_by_dungeon_maker_function then
@@ -1114,7 +1122,7 @@ local function make_dungeon(pos, width, floor_type, wall_type_1, wall_type_2, ro
 		local staircase_height = dungeon_maps[i].top_deph
 		-- make dungeon level
 		make_dungeon_level(level_pos, width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, dungeon_deph, staircase_height, pillar_height,
-		                   rim_sealed, true, bridge_type, room_style, dungeon_maps[i], i==1, this_dungeon)
+		                   rim_sealed, true, bridge_type, room_style, dungeon_maps[i], i==1, i==dungeon_levels, this_dungeon)
 	end
 	-- replace dungeon air with normal air
 	for x = 1, width * 10 do

@@ -451,7 +451,7 @@ end
 
 local spawn_tick = 0
 minetest.register_globalstep(function(dtime)
-    if #randungeon.entity_groups == 0 then
+    if #randungeon.entity_groups == 0 and not randungeon.get_entities_for_room then
         return
     end
     spawn_tick = spawn_tick + dtime

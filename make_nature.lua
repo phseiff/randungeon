@@ -116,19 +116,23 @@ local function try_making_vertical_tunnel(pos, dungeon_data)
 end
 
 local function make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
-    local neighbors = {
-        {x=pos.x, y=pos.y, z=pos.z-1},
-        {x=pos.x, y=pos.y, z=pos.z+1},
-        {x=pos.x-1, y=pos.y, z=pos.z},
-        {x=pos.x+1, y=pos.y, z=pos.z}
-    }
     local all_solid = true
-    for _, p in ipairs(neighbors) do
-        local nname = minetest.get_node(p).name
-        local ndef = minetest.registered_nodes[nname]
-        if ndef and ndef.walkable == false and nname ~= "default:river_water_source" then
-            all_solid = false
-            break
+    if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "default:water_source" then
+        all_solid = false
+    else
+        local neighbors = {
+            {x=pos.x, y=pos.y, z=pos.z-1},
+            {x=pos.x, y=pos.y, z=pos.z+1},
+            {x=pos.x-1, y=pos.y, z=pos.z},
+            {x=pos.x+1, y=pos.y, z=pos.z}
+        }
+        for _, p in ipairs(neighbors) do
+            local nname = minetest.get_node(p).name
+            local ndef = minetest.registered_nodes[nname]
+            if ndef and ndef.walkable == false and nname ~= "default:river_water_source" then
+                all_solid = false
+                break
+            end
         end
     end
     if all_solid then
@@ -314,7 +318,7 @@ local function make_pretty_forest(pos, dungeon_data)
         if do_instead_of_ore_ponds == "" then
             made_pond = make_pond(pos, chance_for_water_lilies_on_seed_based_ponds)
         else
-            decorations = string.split(do_instead_of_ore_ponds, " ")
+            local decorations = string.split(do_instead_of_ore_ponds, " ")
             place_node_if_possible({x=pos.x, y=pos.y+1, z=pos.z}, decorations[math.random(1, #decorations)])
         end
     end
@@ -603,17 +607,24 @@ randungeon.nature_types = {
 randungeon.nature_functions = {}
 
 local function get_random_cave_nature_type()
-    local total_weight = 0
-    for _, data in pairs(randungeon.nature_types) do
-        total_weight = total_weight + data.caves_weight
-    end
-    local chosen_weight = math.random() * total_weight
-    local weight_so_far = 0
-    for name, data in pairs(randungeon.nature_types) do
-        weight_so_far = weight_so_far + data.caves_weight
-        if weight_so_far >= chosen_weight then
-            return name
+    while true do
+        local total_weight = 0
+        for _, data in pairs(randungeon.nature_types) do
+            total_weight = total_weight + data.caves_weight
         end
+        local chosen_weight = math.random() * total_weight
+        local weight_so_far = 0
+        for name, data in pairs(randungeon.nature_types) do
+            weight_so_far = weight_so_far + data.caves_weight
+            if weight_so_far >= chosen_weight then
+                if not data.allowed or not room_or_cave_data or data.allowed(room_or_cave_data) then
+                    return name
+                else
+                    goto continue_loop
+                end
+            end
+        end
+        ::continue_loop::
     end
 end
 

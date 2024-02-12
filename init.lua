@@ -399,7 +399,7 @@ minetest.register_craftitem("randungeon:dungeon_stick_1_tile", {
 		local z_minus = not user:get_inventory():is_empty("dungeon_z_minus")
 		make_dungeon_tile(pos, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, x_plus, x_minus, z_plus, z_minus,
 		                  meta:get_int("dungeon_deph"), meta:get_int("dungeon_deph"), meta:get_int("dungeon_deph"), nil, nil, bridge_type, false, nil, true, false,
-						  false, nil)
+						  false, nil, false)
 		for x = 1, 10 do
 			for z = 1, 10 do
 				for y = 0, 5 do
@@ -452,7 +452,7 @@ minetest.register_craftitem("randungeon:dungeon_stick_2_level", {
 		pos.y = math.floor(pos.y / 10) * 10
 		pos.z = math.floor(pos.z / 10) * 10
 		make_dungeon_level(pos, dungeon_width, floor_type, wall_type_1, wall_type_2, roof_type, pillar_type, meta:get_int("dungeon_deph"),
-		                   meta:get_int("dungeon_deph"), meta:get_int("dungeon_deph"), meta:get_int("rim_sealed"), false, bridge_type, nil, nil, true, nil)
+		                   meta:get_int("dungeon_deph"), meta:get_int("dungeon_deph"), meta:get_int("rim_sealed"), false, bridge_type, nil, nil, true, true, nil)
 	end
 })
 
