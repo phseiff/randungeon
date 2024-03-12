@@ -51,6 +51,8 @@ function randungeon.create_spawning_debug_html(dungeon_data)
     local entity_quantity = {}
     local entity_quantity_caves = {}
     local entity_quantity_rooms = {}
+    local number_of_rooms_and_caves = 0
+    local number_of_rooms = 0
     local p = dungeon_data.pos
     local file = io.open(minetest.get_worldpath().."/entity_spawn_log_" .. tostring(p.x) .. "," .. tostring(p.y) .. "," .. tostring(p.z) .. ".html", "w")
     local level = 0
@@ -130,11 +132,18 @@ function randungeon.create_spawning_debug_html(dungeon_data)
                     level = level + 1
                     text = text .. "\n</div><h2>Level " .. tostring(level) .. "</h2></div><div class='container'>"
                 end
+                if randungeon_player and level < randungeon_player.DUNGEON_LEVELS then
+                    number_of_rooms_and_caves = number_of_rooms_and_caves + 1
+                    number_of_rooms = number_of_rooms + 1
+                end
                 text = text .. cave_or_room_to_string(room, entity_quantity, entity_quantity_caves, entity_quantity_rooms, level)
             end
         end
         if dungeon_data.bubble_caves[y] then
             for _, cave in ipairs(dungeon_data.bubble_caves[y]) do
+                if randungeon_player and level < randungeon_player.DUNGEON_LEVELS then
+                    number_of_rooms_and_caves = number_of_rooms_and_caves + 1
+                end
                 text = text .. cave_or_room_to_string(cave, entity_quantity, entity_quantity_caves, entity_quantity_rooms, level)
             end
         end
@@ -248,6 +257,14 @@ function randungeon.create_spawning_debug_html(dungeon_data)
         end
     end
 
+    if randungeon_monsters and randungeon_monsters.total_hp_spawned_in_dungeon then
+        text = text .. "\n<br/></br>total hp of monsters: " .. randungeon_monsters.total_hp_spawned_in_dungeon
+        text = text .. "\n<br/>number of rooms and caves: " .. number_of_rooms_and_caves
+        text = text .. "\n<br/>monster hp per room or cave: " .. (randungeon_monsters.total_hp_spawned_in_dungeon / number_of_rooms_and_caves)
+        text = text .. "\n<br/>total hp of monsters in rooms: " .. (randungeon_monsters.total_hp_spawned_in_dungeon_rooms)
+        text = text .. "\n<br/>number of rooms: " .. (number_of_rooms)
+        text = text .. "\n<br/>monster hp per room: " .. (randungeon_monsters.total_hp_spawned_in_dungeon_rooms / number_of_rooms)
+    end
 
 	if file then
 		file:write(text)
